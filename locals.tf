@@ -1,5 +1,12 @@
 # TODO: insert locals here.
 locals {
+  # Map deprecated enable_ha (bool) to ha_mode if user did not override ha_mode (i.e., left Disabled and enable_ha provided)
+  # Normalize ha_mode: support legacy "ZoneRedundant" by translating to provider-required "ZoneRedundantPreferred"
+  effective_ha_mode = (
+    var.ha_mode == "Disabled" && var.enable_ha != null ? (var.enable_ha ? "SameZone" : "Disabled") : (
+      var.ha_mode == "ZoneRedundant" ? "ZoneRedundantPreferred" : var.ha_mode
+    )
+  )
   managed_identities = {
     system_assigned_user_assigned = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
       this = {

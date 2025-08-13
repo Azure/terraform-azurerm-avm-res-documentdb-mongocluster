@@ -1,6 +1,7 @@
 # TODO remove this code & var.private_endpoints if private link is not support.  Note it must be included in this module if it is supported.
 resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
-  for_each = var.private_endpoints
+  # Only create this variant when we are managing the private DNS zone group internally
+  for_each = var.private_endpoints_manage_dns_zone_group ? var.private_endpoints : {}
 
   location                      = each.value.location != null ? each.value.location : var.location
   name                          = each.value.name != null ? each.value.name : "pe-${var.name}"
@@ -12,8 +13,8 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
   private_service_connection {
     is_manual_connection           = false
     name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
-    private_connection_resource_id = azurerm_resource_group.TODO.id # TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
-    subresource_names              = ["TODO subresource name, see https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview#private-link-resource"]
+    private_connection_resource_id = azapi_resource.mongo_cluster.id
+    subresource_names              = ["MongoCluster"] # Updated guess based on provider error; 'mongodb' rejected.
   }
   dynamic "ip_configuration" {
     for_each = each.value.ip_configurations
@@ -21,8 +22,6 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
     content {
       name               = ip_configuration.value.name
       private_ip_address = ip_configuration.value.private_ip_address
-      member_name        = "TODO subresource name"
-      subresource_name   = "TODO subresource name"
     }
   }
   dynamic "private_dns_zone_group" {
@@ -39,7 +38,8 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
 # An example use case is customers using Azure Policy to create private DNS zones
 # e.g. <https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/private-link-and-dns-integration-at-scale>
 resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
-  for_each = { for k, v in var.private_endpoints : k => v if !var.private_endpoints_manage_dns_zone_group }
+  # Only create this variant when DNS zone groups are NOT managed here
+  for_each = var.private_endpoints_manage_dns_zone_group ? {} : var.private_endpoints
 
   location                      = each.value.location != null ? each.value.location : var.location
   name                          = each.value.name != null ? each.value.name : "pe-${var.name}"
@@ -51,8 +51,8 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
   private_service_connection {
     is_manual_connection           = false
     name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
-    private_connection_resource_id = azurerm_resource_group.TODO.id # TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
-    subresource_names              = ["TODO subresource name, see https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview#private-link-resource"]
+    private_connection_resource_id = azapi_resource.mongo_cluster.id
+    subresource_names              = ["MongoCluster"]
   }
   dynamic "ip_configuration" {
     for_each = each.value.ip_configurations
@@ -60,8 +60,6 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
     content {
       name               = ip_configuration.value.name
       private_ip_address = ip_configuration.value.private_ip_address
-      member_name        = "TODO subresource name"
-      subresource_name   = "TODO subresource name"
     }
   }
 

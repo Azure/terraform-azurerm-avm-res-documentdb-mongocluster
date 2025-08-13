@@ -23,14 +23,16 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
+- [azapi_resource.firewall_rule](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.mongo_cluster](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
-- [azurerm_resource_group.TODO](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
+- [azapi_client_config.current](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
@@ -38,6 +40,18 @@ The following resources are used by this module:
 ## Required Inputs
 
 The following input variables are required:
+
+### <a name="input_administrator_login"></a> [administrator\_login](#input\_administrator\_login)
+
+Description: Administrator (cluster) login name. Must start with a letter; allowed: letters, numbers, - and \_.
+
+Type: `string`
+
+### <a name="input_administrator_login_password"></a> [administrator\_login\_password](#input\_administrator\_login\_password)
+
+Description: Administrator login password (sensitive). Prefer injecting from a secure external secret source (e.g., TF Cloud Var, Key Vault data source).
+
+Type: `string`
 
 ### <a name="input_location"></a> [location](#input\_location)
 
@@ -60,6 +74,22 @@ Type: `string`
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_backup_policy_type"></a> [backup\_policy\_type](#input\_backup\_policy\_type)
+
+Description: Backup policy type (e.g., Periodic, Continuous7Days, Continuous30Days).
+
+Type: `string`
+
+Default: `"Continuous7Days"`
+
+### <a name="input_compute_tier"></a> [compute\_tier](#input\_compute\_tier)
+
+Description: Compute tier (e.g., M30, M40, etc.).
+
+Type: `string`
+
+Default: `"M30"`
 
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
@@ -119,6 +149,14 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_enable_ha"></a> [enable\_ha](#input\_enable\_ha)
+
+Description: (Deprecated) Previous preview boolean for HA. If set and ha\_mode not overridden, true=>SameZone, false=>Disabled.
+
+Type: `bool`
+
+Default: `null`
+
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
 Description: This variable controls whether or not telemetry is enabled for the module.  
@@ -128,6 +166,30 @@ If it is set to false, then no telemetry will be collected.
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_firewall_rules"></a> [firewall\_rules](#input\_firewall\_rules)
+
+Description: List of firewall rules (public IP ranges) applied when public network access is Enabled.
+
+Type:
+
+```hcl
+list(object({
+    name     = string
+    start_ip = string
+    end_ip   = string
+  }))
+```
+
+Default: `[]`
+
+### <a name="input_ha_mode"></a> [ha\_mode](#input\_ha\_mode)
+
+Description: High availability target mode for the cluster: Disabled, SameZone, ZoneRedundantPreferred. (Older docs may reference ZoneRedundant; use ZoneRedundantPreferred).
+
+Type: `string`
+
+Default: `"Disabled"`
 
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
@@ -164,6 +226,14 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_node_count"></a> [node\_count](#input\_node\_count)
+
+Description: (Deprecated) Previous preview node\_count for nodeGroupSpecs. Ignored in 2024-07-01 api; use shard\_count instead.
+
+Type: `number`
+
+Default: `null`
 
 ### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
 
@@ -229,6 +299,14 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_public_network_access"></a> [public\_network\_access](#input\_public\_network\_access)
+
+Description: Enable or disable public network access: Enabled or Disabled.
+
+Type: `string`
+
+Default: `"Disabled"`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -261,6 +339,30 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_server_version"></a> [server\_version](#input\_server\_version)
+
+Description: MongoDB server version (e.g. 7.0).
+
+Type: `string`
+
+Default: `"7.0"`
+
+### <a name="input_shard_count"></a> [shard\_count](#input\_shard\_count)
+
+Description: Number of shards (properties.sharding.shardCount).
+
+Type: `number`
+
+Default: `1`
+
+### <a name="input_storage_size_gb"></a> [storage\_size\_gb](#input\_storage\_size\_gb)
+
+Description: Cluster storage size in GB (service supported increments).
+
+Type: `number`
+
+Default: `32`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: (Optional) Tags of the resource.
@@ -272,6 +374,30 @@ Default: `null`
 ## Outputs
 
 The following outputs are exported:
+
+### <a name="output_mongo_cluster_connection_string"></a> [mongo\_cluster\_connection\_string](#output\_mongo\_cluster\_connection\_string)
+
+Description: Primary Mongo connection string if exposed (preview shape). Null if not available yet.
+
+### <a name="output_mongo_cluster_connection_strings"></a> [mongo\_cluster\_connection\_strings](#output\_mongo\_cluster\_connection\_strings)
+
+Description: Collection of connection strings if service returns multiple. Null if not available.
+
+### <a name="output_mongo_cluster_id"></a> [mongo\_cluster\_id](#output\_mongo\_cluster\_id)
+
+Description: Resource ID of the MongoDB vCore cluster.
+
+### <a name="output_mongo_cluster_location"></a> [mongo\_cluster\_location](#output\_mongo\_cluster\_location)
+
+Description: Location of the MongoDB vCore cluster.
+
+### <a name="output_mongo_cluster_name"></a> [mongo\_cluster\_name](#output\_mongo\_cluster\_name)
+
+Description: Name of the MongoDB vCore cluster.
+
+### <a name="output_mongo_cluster_properties"></a> [mongo\_cluster\_properties](#output\_mongo\_cluster\_properties)
+
+Description: Raw properties object returned by the AzAPI provider (may include status, sizing, endpoints). Subject to change with API versions.
 
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 

@@ -1,3 +1,29 @@
+# ---------------------------------------------
+# MongoDB vCore specific variables (AzAPI)
+# ---------------------------------------------
+variable "administrator_login" {
+  type        = string
+  description = "Administrator (cluster) login name. Must start with a letter; allowed: letters, numbers, - and _."
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[A-Za-z][A-Za-z0-9_-]{3,30}$", var.administrator_login))
+    error_message = "administrator_login must be 4-31 chars, start with a letter, and contain only letters, numbers, - or _."
+  }
+}
+
+variable "administrator_login_password" {
+  type        = string
+  description = "Administrator login password (sensitive). Prefer injecting from a secure external secret source (e.g., TF Cloud Var, Key Vault data source)."
+  nullable    = false
+  sensitive   = true
+
+  validation {
+    condition     = length(var.administrator_login_password) >= 12
+    error_message = "administrator_login_password must be at least 12 characters (apply your org complexity policy)."
+  }
+}
+
 variable "location" {
   type        = string
   description = "Azure region where the resource should be deployed."
@@ -9,10 +35,8 @@ variable "name" {
   description = "The name of the this resource."
 
   validation {
-    condition     = can(regex("TODO", var.name))
-    error_message = "The name must be TODO." # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
+    condition     = can(regex("^[a-z0-9-]{3,50}$", var.name))
+    error_message = "The name must be 3-50 chars, lowercase letters, numbers, and hyphens only."
   }
 }
 
@@ -20,6 +44,30 @@ variable "name" {
 variable "resource_group_name" {
   type        = string
   description = "The resource group where the resources will be deployed."
+}
+
+variable "backup_policy_type" {
+  type        = string
+  default     = "Continuous7Days"
+  description = "Backup policy type (e.g., Periodic, Continuous7Days, Continuous30Days)."
+  nullable    = false
+
+  validation {
+    condition     = contains(["Periodic", "Continuous7Days", "Continuous30Days"], var.backup_policy_type)
+    error_message = "backup_policy_type must be one of: Periodic, Continuous7Days, Continuous30Days."
+  }
+}
+
+variable "compute_tier" {
+  type        = string
+  default     = "M30"
+  description = "Compute tier (e.g., M30, M40, etc.)."
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^M[0-9]+$", var.compute_tier))
+    error_message = "compute_tier must match pattern M<number> (e.g., M30)."
+  }
 }
 
 # required AVM interfaces
@@ -90,6 +138,13 @@ DESCRIPTION
   }
 }
 
+# Deprecated variables retained for early preview compatibility (will be removed before first stable release)
+variable "enable_ha" {
+  type        = bool
+  default     = null
+  description = "(Deprecated) Previous preview boolean for HA. If set and ha_mode not overridden, true=>SameZone, false=>Disabled."
+}
+
 variable "enable_telemetry" {
   type        = bool
   default     = true
@@ -99,6 +154,40 @@ For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 DESCRIPTION
   nullable    = false
+}
+
+variable "firewall_rules" {
+  type = list(object({
+    name     = string
+    start_ip = string
+    end_ip   = string
+  }))
+  default     = []
+  description = "List of firewall rules (public IP ranges) applied when public network access is Enabled."
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for r in var.firewall_rules : can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", r.start_ip)) && can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", r.end_ip))
+    ])
+    error_message = "firewall_rules start_ip and end_ip must be valid IPv4 addresses (simple regex check)."
+  }
+  validation {
+    condition     = var.public_network_access == "Enabled" || length(var.firewall_rules) == 0
+    error_message = "firewall_rules can only be specified when public_network_access is 'Enabled'."
+  }
+}
+
+variable "ha_mode" {
+  type        = string
+  default     = "Disabled"
+  description = "High availability target mode for the cluster: Disabled, SameZone, ZoneRedundantPreferred. (Older docs may reference ZoneRedundant; use ZoneRedundantPreferred)."
+  nullable    = false
+
+  validation {
+    condition     = contains(["Disabled", "SameZone", "ZoneRedundantPreferred", "ZoneRedundant"], var.ha_mode)
+    error_message = "ha_mode must be one of: Disabled, SameZone, ZoneRedundantPreferred."
+  }
 }
 
 variable "lock" {
@@ -134,6 +223,12 @@ Controls the Managed Identity configuration on this resource. The following prop
 - `user_assigned_resource_ids` - (Optional) Specifies a list of User Assigned Managed Identity resource IDs to be assigned to this resource.
 DESCRIPTION
   nullable    = false
+}
+
+variable "node_count" {
+  type        = number
+  default     = null
+  description = "(Deprecated) Previous preview node_count for nodeGroupSpecs. Ignored in 2024-07-01 api; use shard_count instead."
 }
 
 variable "private_endpoints" {
@@ -200,6 +295,18 @@ variable "private_endpoints_manage_dns_zone_group" {
   nullable    = false
 }
 
+variable "public_network_access" {
+  type        = string
+  default     = "Disabled"
+  description = "Enable or disable public network access: Enabled or Disabled."
+  nullable    = false
+
+  validation {
+    condition     = contains(["Enabled", "Disabled"], var.public_network_access)
+    error_message = "public_network_access must be Enabled or Disabled."
+  }
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
@@ -227,6 +334,37 @@ A map of role assignments to create on this resource. The map key is deliberatel
 > Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
 DESCRIPTION
   nullable    = false
+}
+
+variable "server_version" {
+  type        = string
+  default     = "7.0"
+  description = "MongoDB server version (e.g. 7.0)."
+  nullable    = false
+}
+
+variable "shard_count" {
+  type        = number
+  default     = 1
+  description = "Number of shards (properties.sharding.shardCount)."
+  nullable    = false
+
+  validation {
+    condition     = var.shard_count >= 1 && var.shard_count <= 50
+    error_message = "shard_count must be between 1 and 50."
+  }
+}
+
+variable "storage_size_gb" {
+  type        = number
+  default     = 32
+  description = "Cluster storage size in GB (service supported increments)."
+  nullable    = false
+
+  validation {
+    condition     = var.storage_size_gb >= 32
+    error_message = "storage_size_gb must be >= 32."
+  }
 }
 
 # tflint-ignore: terraform_unused_declarations
