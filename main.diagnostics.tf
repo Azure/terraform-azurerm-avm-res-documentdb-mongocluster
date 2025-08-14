@@ -11,7 +11,7 @@ resource "azapi_resource" "diagnostic_setting" {
   # Build the properties dynamically, omitting nulls to satisfy the ARM schema
   body = jsonencode({
     properties = merge(
-      // Logs (categories + groups)
+      # Logs (categories + groups)
       (length(try(each.value.log_categories, [])) + length(try(each.value.log_groups, [])) > 0)
       ? {
         logs = concat(
@@ -29,7 +29,7 @@ resource "azapi_resource" "diagnostic_setting" {
       }
       : {},
 
-      // Metrics (categories)
+      # Metrics (categories)
       (length(try(each.value.metric_categories, [])) > 0)
       ? {
         metrics = [for cat in try(each.value.metric_categories, []) : {
@@ -40,7 +40,7 @@ resource "azapi_resource" "diagnostic_setting" {
       }
       : {},
 
-      // Sinks
+      # Sinks
       try(each.value.workspace_resource_id, null) != null ? { workspaceId = each.value.workspace_resource_id } : {},
       try(each.value.storage_account_resource_id, null) != null ? { storageAccountId = each.value.storage_account_resource_id } : {},
       try(each.value.event_hub_authorization_rule_resource_id, null) != null ? { eventHubAuthorizationRuleId = each.value.event_hub_authorization_rule_resource_id } : {},
