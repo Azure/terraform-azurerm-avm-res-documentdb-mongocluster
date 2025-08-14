@@ -46,6 +46,7 @@ variable "resource_group_name" {
   description = "The resource group where the resources will be deployed."
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "backup_policy_type" {
   type        = string
   default     = "Continuous7Days"
@@ -93,6 +94,7 @@ A map describing customer-managed keys to associate with the resource. This incl
 DESCRIPTION
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "diagnostic_settings" {
   type = map(object({
     name                                     = optional(string, null)
@@ -225,6 +227,7 @@ DESCRIPTION
   nullable    = false
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "node_count" {
   type        = number
   default     = null
@@ -242,6 +245,7 @@ variable "private_endpoints" {
       condition                              = optional(string, null)
       condition_version                      = optional(string, null)
       delegated_managed_identity_resource_id = optional(string, null)
+      principal_type                         = optional(string, null)
     })), {})
     lock = optional(object({
       kind = string
