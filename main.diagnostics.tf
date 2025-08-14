@@ -1,41 +1,52 @@
 ############################################################
-# Diagnostic Settings (Azure Monitor)
+# Diagnostic Settings (Azure Monitor) via AzAPI
 ############################################################
 
-resource "azurerm_monitor_diagnostic_setting" "this" {
+resource "azapi_resource" "diagnostic_setting" {
   for_each = var.diagnostic_settings
 
-  name                           = coalesce(each.value.name, "ds-${var.name}-${each.key}")
-  target_resource_id             = azapi_resource.mongo_cluster.id
-  eventhub_authorization_rule_id = try(each.value.event_hub_authorization_rule_resource_id, null)
-  eventhub_name                  = try(each.value.event_hub_name, null)
-  log_analytics_destination_type = try(each.value.log_analytics_destination_type, null)
-  log_analytics_workspace_id     = try(each.value.workspace_resource_id, null)
-  storage_account_id             = try(each.value.storage_account_resource_id, null)
+  name      = coalesce(each.value.name, "ds-${var.name}-${each.key}")
+  parent_id = azapi_resource.mongo_cluster.id
+  type      = "Microsoft.Insights/diagnosticSettings@2021-05-01-preview"
+  # Build the properties dynamically, omitting nulls to satisfy the ARM schema
+  body = jsonencode({
+    properties = merge(
+      // Logs (categories + groups)
+      (length(try(each.value.log_categories, [])) + length(try(each.value.log_groups, [])) > 0)
+      ? {
+        logs = concat(
+          [for cat in try(each.value.log_categories, []) : {
+            category        = cat
+            enabled         = true
+            retentionPolicy = { enabled = false, days = 0 }
+          }],
+          [for grp in try(each.value.log_groups, []) : {
+            categoryGroup   = grp
+            enabled         = true
+            retentionPolicy = { enabled = false, days = 0 }
+          }]
+        )
+      }
+      : {},
 
-  # Enable specific log categories
-  dynamic "enabled_log" {
-    for_each = try(each.value.log_categories, [])
+      // Metrics (categories)
+      (length(try(each.value.metric_categories, [])) > 0)
+      ? {
+        metrics = [for cat in try(each.value.metric_categories, []) : {
+          category        = cat
+          enabled         = true
+          retentionPolicy = { enabled = false, days = 0 }
+        }]
+      }
+      : {},
 
-    content {
-      category = enabled_log.value
-    }
-  }
-  # Enable category groups (e.g., allLogs)
-  dynamic "enabled_log" {
-    for_each = try(each.value.log_groups, [])
-
-    content {
-      category_group = enabled_log.value
-    }
-  }
-  # Enable metric categories
-  dynamic "metric" {
-    for_each = try(each.value.metric_categories, [])
-
-    content {
-      category = metric.value
-      enabled  = true
-    }
-  }
+      // Sinks
+      try(each.value.workspace_resource_id, null) != null ? { workspaceId = each.value.workspace_resource_id } : {},
+      try(each.value.storage_account_resource_id, null) != null ? { storageAccountId = each.value.storage_account_resource_id } : {},
+      try(each.value.event_hub_authorization_rule_resource_id, null) != null ? { eventHubAuthorizationRuleId = each.value.event_hub_authorization_rule_resource_id } : {},
+      try(each.value.event_hub_name, null) != null ? { eventHubName = each.value.event_hub_name } : {},
+      try(each.value.log_analytics_destination_type, null) != null ? { logAnalyticsDestinationType = each.value.log_analytics_destination_type } : {}
+    )
+  })
+  schema_validation_enabled = true
 }
