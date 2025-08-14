@@ -62,10 +62,13 @@ resource "azurerm_resource_group" "this" {
 module "test" {
   source = "../../"
 
+  # Required inputs for module validation
+  administrator_login          = "mongoAdminIgnr"
+  administrator_login_password = "Ign0reM3!Passw0rd"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
   # ...
   location            = azurerm_resource_group.this.location
-  name                = "TODO" # TODO update with module.naming.<RESOURCE_TYPE>.name_unique
+  name                = "mongo-vcore-ignored"
   resource_group_name = azurerm_resource_group.this.name
   enable_telemetry    = var.enable_telemetry # see variables.tf
 }
