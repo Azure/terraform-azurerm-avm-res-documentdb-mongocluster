@@ -183,6 +183,14 @@ list(object({
 
 Default: `[]`
 
+### <a name="input_ha_mode"></a> [ha\_mode](#input\_ha\_mode)
+
+Description: High availability target mode for the cluster: Disabled, SameZone, ZoneRedundantPreferred. (Legacy value ZoneRedundant maps to ZoneRedundantPreferred).
+
+Type: `string`
+
+Default: `"Disabled"`
+
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
 Description: Controls the Resource Lock configuration for this resource. The following properties can be specified:
