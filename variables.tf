@@ -130,13 +130,11 @@ DESCRIPTION
     error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
   }
   validation {
-    condition = alltrue(
-      [
-        for _, v in var.diagnostic_settings :
-        v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
-      ]
-    )
-    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
+    condition = count([
+      for _, v in var.diagnostic_settings :
+      v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
+    ]) == length(var.diagnostic_settings)
+    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set for each diagnostic setting."
   }
 }
 
@@ -165,7 +163,7 @@ variable "firewall_rules" {
     end_ip   = string
   }))
   default     = []
-  description = "List of firewall rules (public IP ranges) applied when public network access is Enabled."
+  description = "List of firewall rules (public IP ranges) applied when public network access is Enabled. Note: Only specify firewall_rules when public_network_access is 'Enabled'."
   nullable    = false
 
   validation {
@@ -176,19 +174,7 @@ variable "firewall_rules" {
   }
   validation {
     condition     = var.public_network_access == "Enabled" || length(var.firewall_rules) == 0
-    error_message = "firewall_rules can only be specified when public_network_access is 'Enabled'."
-  }
-}
-
-variable "ha_mode" {
-  type        = string
-  default     = "Disabled"
-  description = "High availability target mode for the cluster: Disabled, SameZone, ZoneRedundantPreferred. (Older docs may reference ZoneRedundant; use ZoneRedundantPreferred)."
-  nullable    = false
-
-  validation {
-    condition     = contains(["Disabled", "SameZone", "ZoneRedundantPreferred", "ZoneRedundant"], var.ha_mode)
-    error_message = "ha_mode must be one of: Disabled, SameZone, ZoneRedundantPreferred."
+    error_message = "firewall_rules can only be specified when the variable 'public_network_access' is set to 'Enabled'."
   }
 }
 

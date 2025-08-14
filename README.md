@@ -169,7 +169,7 @@ Default: `true`
 
 ### <a name="input_firewall_rules"></a> [firewall\_rules](#input\_firewall\_rules)
 
-Description: List of firewall rules (public IP ranges) applied when public network access is Enabled.
+Description: List of firewall rules (public IP ranges) applied when public network access is Enabled. Note: Only specify firewall\_rules when public\_network\_access is 'Enabled'.
 
 Type:
 
@@ -182,14 +182,6 @@ list(object({
 ```
 
 Default: `[]`
-
-### <a name="input_ha_mode"></a> [ha\_mode](#input\_ha\_mode)
-
-Description: High availability target mode for the cluster: Disabled, SameZone, ZoneRedundantPreferred. (Older docs may reference ZoneRedundant; use ZoneRedundantPreferred).
-
-Type: `string`
-
-Default: `"Disabled"`
 
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
