@@ -51,6 +51,12 @@ resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
 }
 
+resource "random_password" "mongo_adminpassword" {
+  length           = 16
+  override_special = "_%@"
+  special          = true
+}
+
 # Network resources for private endpoint example
 resource "azurerm_virtual_network" "pe" {
   location            = azurerm_resource_group.this.location
@@ -73,12 +79,12 @@ resource "azurerm_subnet" "pe" {
 module "test" {
   source = "../../"
 
-  administrator_login          = "mongoAdminUser"    # example only
-  administrator_login_password = "ChangeM3Now!12345" # example only; DO NOT use hard-coded secrets in production
+  administrator_login          = "mongoAdminUser"
+  administrator_login_password = random_password.mongo_adminpassword.result
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
   # ...
   location              = azurerm_resource_group.this.location
-  name                  = "mongo-vcore-demo" # replace with CAF-compliant naming if required
+  name                  = module.naming.cosmosdb_account.name_unique
   resource_group_name   = azurerm_resource_group.this.name
   backup_policy_type    = "Continuous7Days"
   compute_tier          = "M30"
@@ -94,8 +100,8 @@ module "test" {
 module "test_public" {
   source = "../../"
 
-  administrator_login          = "mongoAdminFw"      # demo only
-  administrator_login_password = "ChangeM3Now!12345" # demo only; NEVER hard-code in real usage
+  administrator_login          = "mongoAdminFw"
+  administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
   name                         = "mongo-vcore-fw-demo" # ensure globally unique per subscription
   resource_group_name          = azurerm_resource_group.this.name
@@ -125,8 +131,8 @@ module "test_public" {
 module "test_private" {
   source = "../../"
 
-  administrator_login          = "mongoAdminPe"      # demo only
-  administrator_login_password = "ChangeM3Now!12345" # demo only
+  administrator_login          = "mongoAdminPe"
+  administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
   name                         = "mongo-vcore-pe-demo"
   resource_group_name          = azurerm_resource_group.this.name
@@ -166,6 +172,7 @@ The following resources are used by this module:
 - [azurerm_subnet.pe](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.pe](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [random_password.mongo_adminpassword](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
