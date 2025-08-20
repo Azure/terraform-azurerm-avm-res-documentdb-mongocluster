@@ -50,3 +50,4 @@ avm.tflint_module.merged.hcl
 
 # conftest policy
 examples/*/policy
+.github/chatmodes/*
