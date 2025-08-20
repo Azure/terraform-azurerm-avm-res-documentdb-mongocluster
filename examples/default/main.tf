@@ -17,17 +17,13 @@ provider "azurerm" {
   features {}
 }
 
-
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-module "regions" {
-  source  = "Azure/avm-utl-regions/azurerm"
-  version = "0.7.0"
+locals {
+  test_regions = ["malayasiawest", "southeastasia"]
 }
 
 # This allows us to randomize the region for the resource group.
 resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
+  max = length(local.test_regions) - 1
   min = 0
 }
 ## End of section to provide a random Azure region for the resource group
@@ -40,7 +36,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = module.regions.regions[random_integer.region_index.result].name
+  location = local.test_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
 
@@ -70,6 +66,11 @@ resource "azurerm_subnet" "pe" {
   name                 = "pe-subnet"
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.pe.name
+}
+
+module "public_ip" {
+  source  = "lonegunmanb/public-ip/lonegunmanb"
+  version = "0.1.0"
 }
 
 # This is the module call
@@ -109,15 +110,15 @@ module "test_public" {
   compute_tier                 = "M40"
   enable_telemetry             = var.enable_telemetry
   firewall_rules = [
-    {
-      name     = "allow-home"
-      start_ip = "1.2.3.4"
-      end_ip   = "1.2.3.4"
-    },
+    # {
+    #   name     = "allow-home"
+    #   start_ip = "1.2.3.4"
+    #   end_ip   = "1.2.3.4"
+    # },
     {
       name     = "allow-range"
-      start_ip = "10.0.0.1"
-      end_ip   = "10.0.0.10"
+      start_ip = module.public_ip.public_ip
+      end_ip   = module.public_ip.public_ip
     }
   ]
   ha_mode               = "ZoneRedundantPreferred"
