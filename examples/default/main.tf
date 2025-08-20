@@ -50,6 +50,13 @@ resource "random_password" "mongo_adminpassword" {
   special          = true
 }
 
+resource "random_string" "resname" {
+  length  = 10
+  numeric = true
+  special = false
+  upper   = false
+}
+
 # Network resources for private endpoint example
 resource "azurerm_virtual_network" "pe" {
   location            = azurerm_resource_group.this.location
@@ -77,7 +84,7 @@ module "test" {
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
   # ...
   location              = azurerm_resource_group.this.location
-  name                  = module.naming.cosmosdb_account.name_unique
+  name                  = "cosmon-${random_string.resname.result}"
   resource_group_name   = azurerm_resource_group.this.name
   backup_policy_type    = "Continuous7Days"
   compute_tier          = "M30"
@@ -96,7 +103,7 @@ module "test_public" {
   administrator_login          = "mongoAdminFw"
   administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
-  name                         = "mongo-vcore-fw-demo" # ensure globally unique per subscription
+  name                         = "cosmon-${random_string.resname.result}fw" # ensure globally unique per subscription
   resource_group_name          = azurerm_resource_group.this.name
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M40"
@@ -127,7 +134,7 @@ module "test_private" {
   administrator_login          = "mongoAdminPe"
   administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
-  name                         = "mongo-vcore-pe-demo"
+  name                         = "cosmon-${random_string.resname.result}pe"
   resource_group_name          = azurerm_resource_group.this.name
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M30"
