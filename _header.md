@@ -1,3 +1,3 @@
-# terraform-azurerm-avm-template
+# terraform-azurerm-avm-res-documentdb-mongocluster
 
-This is a template repo for Terraform Azure Verified Modules.
+This module manages a MongoDB Cluster using vCore Architecture.

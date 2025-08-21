@@ -13,10 +13,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.21"
     }
-    modtm = {
-      source  = "azure/modtm"
-      version = "~> 0.3"
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
@@ -28,17 +24,13 @@ provider "azurerm" {
   features {}
 }
 
-
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-module "regions" {
-  source  = "Azure/avm-utl-regions/azurerm"
-  version = "~> 0.1"
+locals {
+  test_regions = ["malaysiawest", "southeastasia"]
 }
 
 # This allows us to randomize the region for the resource group.
 resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
+  max = length(local.test_regions) - 1
   min = 0
 }
 ## End of section to provide a random Azure region for the resource group
@@ -46,13 +38,46 @@ resource "random_integer" "region_index" {
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
   source  = "Azure/naming/azurerm"
-  version = "~> 0.3"
+  version = "0.4.2"
 }
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = module.regions.regions[random_integer.region_index.result].name
+  location = local.test_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
+}
+
+resource "random_password" "mongo_adminpassword" {
+  length           = 16
+  override_special = "_%@"
+  special          = true
+}
+
+resource "random_string" "resname" {
+  length  = 10
+  numeric = true
+  special = false
+  upper   = false
+}
+
+# Network resources for private endpoint example
+resource "azurerm_virtual_network" "pe" {
+  location            = azurerm_resource_group.this.location
+  name                = "${module.naming.virtual_network.name_unique}-pe"
+  resource_group_name = azurerm_resource_group.this.name
+  address_space       = ["10.10.0.0/16"]
+}
+
+resource "azurerm_subnet" "pe" {
+  address_prefixes     = ["10.10.0.0/24"]
+  name                 = "pe-subnet"
+  resource_group_name  = azurerm_resource_group.this.name
+  virtual_network_name = azurerm_virtual_network.pe.name
+}
+
+module "public_ip" {
+  source  = "lonegunmanb/public-ip/lonegunmanb"
+  version = "0.1.0"
 }
 
 # This is the module call
@@ -62,12 +87,77 @@ resource "azurerm_resource_group" "this" {
 module "test" {
   source = "../../"
 
+  administrator_login          = "mongoAdminUser"
+  administrator_login_password = random_password.mongo_adminpassword.result
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
   # ...
-  location            = azurerm_resource_group.this.location
-  name                = "TODO" # TODO update with module.naming.<RESOURCE_TYPE>.name_unique
-  resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = var.enable_telemetry # see variables.tf
+  location              = azurerm_resource_group.this.location
+  name                  = "cosmon-${random_string.resname.result}"
+  resource_group_name   = azurerm_resource_group.this.name
+  backup_policy_type    = "Continuous7Days"
+  compute_tier          = "M30"
+  enable_telemetry      = var.enable_telemetry # see variables.tf
+  firewall_rules        = []                   # or supply rules when Enabled
+  ha_mode               = "SameZone"
+  public_network_access = "Disabled"
+  server_version        = "7.0"
+  storage_size_gb       = 128
+}
+
+# Second example: cluster with public network access enabled and sample firewall rules
+module "test_public" {
+  source = "../../"
+
+  administrator_login          = "mongoAdminFw"
+  administrator_login_password = random_password.mongo_adminpassword.result
+  location                     = azurerm_resource_group.this.location
+  name                         = "cosmon-${random_string.resname.result}fw" # ensure globally unique per subscription
+  resource_group_name          = azurerm_resource_group.this.name
+  backup_policy_type           = "Continuous7Days"
+  compute_tier                 = "M40"
+  enable_telemetry             = var.enable_telemetry
+  firewall_rules = [
+    # {
+    #   name     = "allow-home"
+    #   start_ip = "1.2.3.4"
+    #   end_ip   = "1.2.3.4"
+    # },
+    {
+      name     = "allow-range"
+      start_ip = module.public_ip.public_ip
+      end_ip   = module.public_ip.public_ip
+    }
+  ]
+  ha_mode               = "ZoneRedundantPreferred"
+  public_network_access = "Enabled"
+  server_version        = "7.0"
+  shard_count           = 2
+  storage_size_gb       = 256
+}
+
+# Third example: cluster with private endpoint (public access disabled)
+module "test_private" {
+  source = "../../"
+
+  administrator_login          = "mongoAdminPe"
+  administrator_login_password = random_password.mongo_adminpassword.result
+  location                     = azurerm_resource_group.this.location
+  name                         = "cosmon-${random_string.resname.result}pe"
+  resource_group_name          = azurerm_resource_group.this.name
+  backup_policy_type           = "Continuous7Days"
+  compute_tier                 = "M30"
+  enable_telemetry             = var.enable_telemetry
+  ha_mode                      = "Disabled"
+  private_endpoints = {
+    pe1 = {
+      subnet_resource_id = azurerm_subnet.pe.id
+    }
+  }
+  private_endpoints_manage_dns_zone_group = false
+  public_network_access                   = "Disabled"
+  server_version                          = "7.0"
+  shard_count                             = 1
+  storage_size_gb                         = 64
 }
 ```
 
@@ -80,8 +170,6 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.21)
 
-- <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
-
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
 ## Resources
@@ -89,7 +177,11 @@ The following requirements are needed by this module:
 The following resources are used by this module:
 
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_subnet.pe](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
+- [azurerm_virtual_network.pe](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [random_password.mongo_adminpassword](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) (resource)
+- [random_string.resname](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -112,7 +204,15 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_test_private_cluster_id"></a> [test\_private\_cluster\_id](#output\_test\_private\_cluster\_id)
+
+Description: Mongo cluster ID for private endpoint example.
+
+### <a name="output_test_private_pe_ids"></a> [test\_private\_pe\_ids](#output\_test\_private\_pe\_ids)
+
+Description: Private endpoint resource IDs for the test\_private module (map).
 
 ## Modules
 
@@ -122,15 +222,27 @@ The following Modules are called:
 
 Source: Azure/naming/azurerm
 
-Version: ~> 0.3
+Version: 0.4.2
 
-### <a name="module_regions"></a> [regions](#module\_regions)
+### <a name="module_public_ip"></a> [public\_ip](#module\_public\_ip)
 
-Source: Azure/avm-utl-regions/azurerm
+Source: lonegunmanb/public-ip/lonegunmanb
 
-Version: ~> 0.1
+Version: 0.1.0
 
 ### <a name="module_test"></a> [test](#module\_test)
+
+Source: ../../
+
+Version:
+
+### <a name="module_test_private"></a> [test\_private](#module\_test\_private)
+
+Source: ../../
+
+Version:
+
+### <a name="module_test_public"></a> [test\_public](#module\_test\_public)
 
 Source: ../../
 
