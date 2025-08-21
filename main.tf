@@ -33,9 +33,13 @@ resource "azapi_resource" "mongo_cluster" {
       publicNetworkAccess = var.public_network_access
     }
   }
+  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   # Schema validation enabled to catch drift with published swagger.
   schema_validation_enabled = true
   tags                      = var.tags
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   lifecycle {
     # API does not return the secret password -> avoid perpetual diffs
@@ -58,7 +62,11 @@ resource "azapi_resource" "firewall_rule" {
       endIpAddress   = each.value.end_ip
     }
   }
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = true
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }
 
 # (Optional) Management lock support (AVM interface) - scope updated to cluster once properties finalized.

@@ -48,5 +48,9 @@ resource "azapi_resource" "diagnostic_setting" {
       try(each.value.log_analytics_destination_type, null) != null ? { logAnalyticsDestinationType = each.value.log_analytics_destination_type } : {}
     )
   })
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = true
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }
