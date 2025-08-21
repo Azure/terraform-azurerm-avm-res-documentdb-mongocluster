@@ -25,7 +25,7 @@ provider "azurerm" {
 }
 
 locals {
-  test_regions = ["malayasiawest", "southeastasia"]
+  test_regions = ["malaysiawest", "southeastasia"]
 }
 
 # This allows us to randomize the region for the resource group.
