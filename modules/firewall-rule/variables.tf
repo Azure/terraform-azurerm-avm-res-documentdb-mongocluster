@@ -21,7 +21,7 @@ variable "start_ip_address" {
   nullable    = false
 
   validation {
-    condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.start_ip_address))
+    condition     = can(cidrhost("${var.start_ip_address}/32", 0))
     error_message = "start_ip_address must be a valid IPv4 address."
   }
 }
@@ -32,7 +32,7 @@ variable "end_ip_address" {
   nullable    = false
 
   validation {
-    condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.end_ip_address))
+    condition     = can(cidrhost("${var.end_ip_address}/32", 0))
     error_message = "end_ip_address must be a valid IPv4 address."
   }
 }

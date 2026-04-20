@@ -52,6 +52,6 @@ resource "azapi_resource" "diagnostic_setting" {
   delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   response_export_values    = []
-  schema_validation_enabled = false
+  schema_validation_enabled = false # Disabled because the 2021-05-01-preview ARM schema has incomplete definitions for dynamic log/metric combinations
   update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }

@@ -33,7 +33,9 @@ resource "azapi_resource" "mongo_cluster" {
       var.customer_managed_key != null ? {
         encryption = {
           customerManagedKeyEncryption = merge(
-            { keyEncryptionKeyUrl = "https://${basename(var.customer_managed_key.key_vault_resource_id)}.vault.azure.net/keys/${var.customer_managed_key.key_name}${var.customer_managed_key.key_version != null ? "/${var.customer_managed_key.key_version}" : ""}" },
+            {
+              keyEncryptionKeyUrl = "${local.cmk_key_vault_uri}/keys/${var.customer_managed_key.key_name}${var.customer_managed_key.key_version != null ? "/${var.customer_managed_key.key_version}" : ""}"
+            },
             var.customer_managed_key.user_assigned_identity != null ? {
               keyEncryptionKeyIdentity = {
                 identityType                   = "UserAssignedIdentity"

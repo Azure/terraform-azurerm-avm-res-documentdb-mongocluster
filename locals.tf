@@ -18,6 +18,15 @@ locals {
     : "None"
   )
 
+  # Derive the Key Vault base URI for CMK.
+  # If key_vault_uri is explicitly provided, use it. Otherwise extract the vault name from
+  # the resource ID (last path segment) and construct the standard Azure vault URI.
+  cmk_key_vault_uri = var.customer_managed_key == null ? null : (
+    var.customer_managed_key.key_vault_uri != null
+    ? trimsuffix(var.customer_managed_key.key_vault_uri, "/")
+    : "https://${element(split("/", var.customer_managed_key.key_vault_resource_id), length(split("/", var.customer_managed_key.key_vault_resource_id)) - 1)}.vault.azure.net"
+  )
+
   # Private endpoint application security group associations.
   # We merge the nested maps from private endpoints and application security group associations into a single map.
   private_endpoint_application_security_group_associations = { for assoc in flatten([
