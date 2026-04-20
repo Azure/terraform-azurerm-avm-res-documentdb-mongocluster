@@ -9,7 +9,7 @@ resource "azapi_resource" "diagnostic_setting" {
   parent_id = azapi_resource.mongo_cluster.id
   type      = "Microsoft.Insights/diagnosticSettings@2021-05-01-preview"
   # Build the properties dynamically, omitting nulls to satisfy the ARM schema
-  body = jsonencode({
+  body = {
     properties = merge(
       # Logs (categories + groups)
       (length(try(each.value.log_categories, [])) + length(try(each.value.log_groups, [])) > 0)
@@ -47,10 +47,11 @@ resource "azapi_resource" "diagnostic_setting" {
       try(each.value.event_hub_name, null) != null ? { eventHubName = each.value.event_hub_name } : {},
       try(each.value.log_analytics_destination_type, null) != null ? { logAnalyticsDestinationType = each.value.log_analytics_destination_type } : {}
     )
-  })
+  }
   create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  schema_validation_enabled = true
+  response_export_values    = []
+  schema_validation_enabled = false # Disabled because the 2021-05-01-preview ARM schema has incomplete definitions for dynamic log/metric combinations
   update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }
