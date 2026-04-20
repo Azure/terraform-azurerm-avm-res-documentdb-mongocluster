@@ -1,7 +1,6 @@
 ############################################################
 # Azure Cosmos DB for MongoDB vCore (mongoClusters) module
-# Fresh skeleton using AzAPI provider.
-# TODO: Add variables (administrator login, password/secret ref, compute tier, storage size, HA settings, server version, backup, tags, identities) in variables.tf.
+# Implemented using the AzAPI provider with API version 2025-09-01.
 ############################################################
 
 locals {
@@ -9,34 +8,61 @@ locals {
   mongo_cluster_id = azapi_resource.mongo_cluster.id
 }
 
-# Core MongoDB vCore Cluster (minimal placeholder). Add required properties before production use.
+# Core MongoDB vCore Cluster resource using 2025-09-01 GA API.
 resource "azapi_resource" "mongo_cluster" {
   location  = var.location
   name      = var.name
   parent_id = "/subscriptions/${data.azapi_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
-  # GA/preview apiVersion with highAvailability.targetMode & sharding structure
-  type = "Microsoft.DocumentDB/mongoClusters@2024-07-01"
+  type      = "Microsoft.DocumentDB/mongoClusters@2025-09-01"
   body = {
-    properties = {
-      administrator = {
-        userName = var.administrator_login
-        # password is required by 2024-07-01 swagger (write-only / not returned). Include and ignore drift.
-        password = var.administrator_login_password
-      }
-      # Compute & storage objects
-      compute          = { tier = var.compute_tier }
-      storage          = { sizeGb = var.storage_size_gb }
-      serverVersion    = var.server_version
-      highAvailability = { targetMode = local.effective_ha_mode }
-      sharding         = { shardCount = var.shard_count }
-      # backup block uses earliestRestoreTime (read only) so no write properties here
-      publicNetworkAccess = var.public_network_access
+    properties = merge(
+      {
+        administrator = {
+          userName = var.administrator_login
+          # password is write-only and not returned by the API; ignore drift via lifecycle
+          password = var.administrator_login_password
+        }
+        compute             = { tier = var.compute_tier }
+        storage             = { sizeGb = var.storage_size_gb }
+        serverVersion       = var.server_version
+        highAvailability    = { targetMode = local.effective_ha_mode }
+        sharding            = { shardCount = var.shard_count }
+        publicNetworkAccess = var.public_network_access
+      },
+      # CMK encryption - requires a user-assigned identity to be configured
+      var.customer_managed_key != null ? {
+        encryption = {
+          customerManagedKeyEncryption = merge(
+            { keyEncryptionKeyUrl = "https://${basename(var.customer_managed_key.key_vault_resource_id)}.vault.azure.net/keys/${var.customer_managed_key.key_name}${var.customer_managed_key.key_version != null ? "/${var.customer_managed_key.key_version}" : ""}" },
+            var.customer_managed_key.user_assigned_identity != null ? {
+              keyEncryptionKeyIdentity = {
+                identityType                   = "UserAssignedIdentity"
+                userAssignedIdentityResourceId = var.customer_managed_key.user_assigned_identity.resource_id
+              }
+            } : {}
+          )
+        }
+      } : {}
+    )
+  }
+  # Managed identity assignment
+  dynamic "identity" {
+    for_each = local.managed_identity_type != "None" ? ["this"] : []
+
+    content {
+      type         = local.managed_identity_type
+      identity_ids = tolist(var.managed_identities.user_assigned_resource_ids)
     }
   }
   create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  # Schema validation enabled to catch drift with published swagger.
+  response_export_values = [
+    "properties.connectionString",
+    "properties.provisioningState",
+    "properties.clusterStatus",
+    "properties.replica",
+  ]
   schema_validation_enabled = true
   tags                      = var.tags
   update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
@@ -49,27 +75,42 @@ resource "azapi_resource" "mongo_cluster" {
   }
 }
 
-# Firewall rules (child resources) - only when public network access is enabled
-resource "azapi_resource" "firewall_rule" {
+# Firewall rules via submodule - only when public network access is enabled
+module "firewall_rule" {
+  source   = "./modules/firewall-rule"
   for_each = var.public_network_access == "Enabled" ? { for r in var.firewall_rules : r.name => r } : {}
 
-  name      = each.key
-  parent_id = azapi_resource.mongo_cluster.id
-  type      = "Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01"
-  body = {
-    properties = {
-      startIpAddress = each.value.start_ip
-      endIpAddress   = each.value.end_ip
-    }
-  }
-  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  schema_validation_enabled = true
-  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  mongo_cluster_id = azapi_resource.mongo_cluster.id
+  name             = each.key
+  start_ip_address = each.value.start_ip
+  end_ip_address   = each.value.end_ip
+  enable_telemetry = var.enable_telemetry
 }
 
-# (Optional) Management lock support (AVM interface) - scope updated to cluster once properties finalized.
+# Private endpoint connection approvals/rejections via submodule
+module "private_endpoint_connection" {
+  source   = "./modules/private-endpoint-connection"
+  for_each = var.private_endpoint_connections
+
+  mongo_cluster_id = azapi_resource.mongo_cluster.id
+  name             = each.key
+  connection_state = each.value
+  enable_telemetry = var.enable_telemetry
+}
+
+# MongoDB users via submodule
+module "user" {
+  source   = "./modules/user"
+  for_each = var.users
+
+  mongo_cluster_id  = azapi_resource.mongo_cluster.id
+  name              = each.key
+  identity_provider = try(each.value.identity_provider, null)
+  roles             = try(each.value.roles, [])
+  enable_telemetry  = var.enable_telemetry
+}
+
+# (Optional) Management lock support (AVM interface)
 resource "azurerm_management_lock" "this" {
   count = var.lock != null ? 1 : 0
 
@@ -95,5 +136,3 @@ resource "azurerm_role_assignment" "this" {
 }
 
 data "azapi_client_config" "current" {}
-
-# TODO: Add outputs (id, name, connection strings, endpoint) once properties are set.

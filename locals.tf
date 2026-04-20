@@ -1,4 +1,3 @@
-# TODO: insert locals here.
 locals {
   # Map deprecated enable_ha (bool) to ha_mode if user did not override ha_mode (i.e., left Disabled and enable_ha provided)
   # Normalize ha_mode: support legacy "ZoneRedundant" by translating to provider-required "ZoneRedundantPreferred"
@@ -7,6 +6,18 @@ locals {
       var.ha_mode == "ZoneRedundant" ? "ZoneRedundantPreferred" : var.ha_mode
     )
   )
+
+  # Resolved identity type string for azapi identity block
+  managed_identity_type = (
+    var.managed_identities.system_assigned && length(var.managed_identities.user_assigned_resource_ids) > 0
+    ? "SystemAssigned, UserAssigned"
+    : var.managed_identities.system_assigned
+    ? "SystemAssigned"
+    : length(var.managed_identities.user_assigned_resource_ids) > 0
+    ? "UserAssigned"
+    : "None"
+  )
+
   # Private endpoint application security group associations.
   # We merge the nested maps from private endpoints and application security group associations into a single map.
   private_endpoint_application_security_group_associations = { for assoc in flatten([

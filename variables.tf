@@ -50,7 +50,11 @@ variable "resource_group_name" {
 variable "backup_policy_type" {
   type        = string
   default     = "Continuous7Days"
-  description = "Backup policy type (e.g., Periodic, Continuous7Days, Continuous30Days)."
+  description = <<DESCRIPTION
+Backup policy type accepted for compatibility. Possible values: Periodic, Continuous7Days, Continuous30Days.
+NOTE: The `Microsoft.DocumentDB/mongoClusters@2025-09-01` API does not expose a writable backup tier property.
+The `backup.earliestRestoreTime` field is read-only. This variable is retained for future API support.
+DESCRIPTION
   nullable    = false
 
   validation {
@@ -71,9 +75,6 @@ variable "compute_tier" {
   }
 }
 
-# required AVM interfaces
-# remove only if not supported by the resource
-# tflint-ignore: terraform_unused_declarations
 variable "customer_managed_key" {
   type = object({
     key_vault_resource_id = string
@@ -91,10 +92,18 @@ A map describing customer-managed keys to associate with the resource. This incl
 - `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
 - `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
   - `resource_id` - The resource ID of the user-assigned identity.
+
+> Note: When using CMK, the user-assigned identity must also be included in `managed_identities.user_assigned_resource_ids`.
 DESCRIPTION
+
+  validation {
+    condition = var.customer_managed_key == null || (
+      try(var.customer_managed_key.user_assigned_identity, null) != null
+    )
+    error_message = "customer_managed_key.user_assigned_identity must be set when customer_managed_key is provided. The identity is required for CMK encryption."
+  }
 }
 
-# tflint-ignore: terraform_unused_declarations
 variable "diagnostic_settings" {
   type = map(object({
     name                                     = optional(string, null)
@@ -211,7 +220,6 @@ DESCRIPTION
   }
 }
 
-# tflint-ignore: terraform_unused_declarations
 variable "managed_identities" {
   type = object({
     system_assigned            = optional(bool, false)
@@ -369,6 +377,50 @@ variable "storage_size_gb" {
     condition     = var.storage_size_gb >= 32
     error_message = "storage_size_gb must be >= 32."
   }
+}
+
+variable "private_endpoint_connections" {
+  type = map(object({
+    status           = string
+    description      = optional(string, null)
+    actions_required = optional(string, null)
+  }))
+  default     = {}
+  description = <<DESCRIPTION
+A map of private endpoint connection approvals/rejections to manage on the cluster.
+The map key is the private endpoint connection name (assigned by Azure).
+
+- `status`           - (Required) The connection status. Possible values: `Pending`, `Approved`, `Rejected`.
+- `description`      - (Optional) The reason for approval/rejection.
+- `actions_required` - (Optional) A message indicating if changes on the service provider require consumer updates.
+DESCRIPTION
+  nullable    = false
+
+  validation {
+    condition     = alltrue([for _, v in var.private_endpoint_connections : contains(["Pending", "Approved", "Rejected"], v.status)])
+    error_message = "Each private_endpoint_connections entry must have a status of Pending, Approved, or Rejected."
+  }
+}
+
+variable "users" {
+  type = map(object({
+    identity_provider = optional(any, null)
+    roles = optional(list(object({
+      db   = string
+      role = string
+    })), [])
+  }))
+  default     = {}
+  description = <<DESCRIPTION
+A map of MongoDB users to create on the cluster. The map key is the user name (1-63 chars, letters/numbers/hyphens).
+
+- `identity_provider` - (Optional) The identity provider definition. For native MongoDB users use `{ objectType = "NativeUser" }`.
+  Refer to the Azure API documentation for all supported shapes.
+- `roles`             - (Optional) A list of database roles to assign. Each entry contains:
+  - `db`   - The name of the database.
+  - `role` - The role name (e.g., `dbOwner`, `read`, `readWrite`).
+DESCRIPTION
+  nullable    = false
 }
 
 # tflint-ignore: terraform_unused_declarations
