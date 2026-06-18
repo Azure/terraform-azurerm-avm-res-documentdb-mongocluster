@@ -3,6 +3,11 @@ output "id" {
   value       = azapi_resource.this.id
 }
 
+output "resource_id" {
+  description = "Resource ID of the private endpoint connection."
+  value       = azapi_resource.this.id
+}
+
 output "name" {
   description = "Name of the private endpoint connection."
   value       = azapi_resource.this.name
