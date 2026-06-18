@@ -26,7 +26,7 @@ resource "azapi_resource" "mongo_cluster" {
           compute = { tier = var.compute_tier }
           storage = {
             sizeGb = var.storage_size_gb
-            type   = var.storage_type # null => API default (PremiumSSD)
+            type   = var.storage_type
           }
           serverVersion    = var.server_version
           highAvailability = { targetMode = local.effective_ha_mode }

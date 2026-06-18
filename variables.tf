@@ -488,11 +488,12 @@ variable "storage_size_gb" {
 
 variable "storage_type" {
   type        = string
-  default     = null
-  description = "(Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. When null the API default (PremiumSSD) is used."
+  default     = "PremiumSSD"
+  description = "(Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to 'PremiumSSD'."
+  nullable    = false
 
   validation {
-    condition     = var.storage_type == null || contains(["PremiumSSD", "PremiumSSDv2"], var.storage_type)
+    condition     = contains(["PremiumSSD", "PremiumSSDv2"], var.storage_type)
     error_message = "storage_type must be 'PremiumSSD' or 'PremiumSSDv2'."
   }
 }
