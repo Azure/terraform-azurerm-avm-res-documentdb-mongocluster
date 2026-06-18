@@ -105,6 +105,10 @@ Description: Resource ID of the user.
 
 Description: Name of the user.
 
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Resource ID of the user.
+
 ## Modules
 
 No modules.

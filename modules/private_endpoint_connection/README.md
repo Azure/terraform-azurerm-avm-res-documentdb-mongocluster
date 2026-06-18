@@ -84,6 +84,10 @@ Description: Resource ID of the private endpoint connection.
 
 Description: Name of the private endpoint connection.
 
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Resource ID of the private endpoint connection.
+
 ### <a name="output_status"></a> [status](#output\_status)
 
 Description: Current approval status of the private endpoint connection.

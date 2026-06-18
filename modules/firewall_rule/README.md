@@ -78,6 +78,10 @@ Description: Resource ID of the firewall rule.
 
 Description: Name of the firewall rule.
 
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Resource ID of the firewall rule.
+
 ## Modules
 
 No modules.
