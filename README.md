@@ -110,12 +110,15 @@ Default: `"Default"`
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
 Description: Customer-managed key encryption settings for the MongoDB cluster. When specified, the cluster will be encrypted using a key from your Key Vault.  
-All properties are required when this is set. Includes:
+Interface-compliant properties include:
 - `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
 - `key_name` - (Required) The name of the key in the vault.
 - `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Required) A user-assigned managed identity that has access to the Key Vault. Includes:
+- `user_assigned_identity` - (Optional in AVM interface) An object with the user-assigned managed identity. Includes:
   - `resource_id` - (Required) The resource ID of the user-assigned identity.
+
+Note: This module requires `user_assigned_identity.resource_id` when `customer_managed_key` is set because  
+the MongoDB 2025-09-01 API requires `keyEncryptionKeyIdentity` for customer-managed keys.
 
 Type:
 
@@ -124,9 +127,9 @@ object({
     key_vault_resource_id = string
     key_name              = string
     key_version           = optional(string, null)
-    user_assigned_identity = object({
+    user_assigned_identity = optional(object({
       resource_id = string
-    })
+    }), null)
   })
 ```
 
