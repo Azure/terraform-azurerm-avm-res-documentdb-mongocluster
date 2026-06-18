@@ -458,11 +458,11 @@ Default: `32`
 
 ### <a name="input_storage_type"></a> [storage\_type](#input\_storage\_type)
 
-Description: (Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. When null the API default (PremiumSSD) is used.
+Description: (Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to 'PremiumSSD'.
 
 Type: `string`
 
-Default: `null`
+Default: `"PremiumSSD"`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
