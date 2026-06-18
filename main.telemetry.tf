@@ -29,10 +29,12 @@ resource "modtm_telemetry" "telemetry" {
     random_id       = one(random_uuid.telemetry).result
   }, { location = local.main_location })
 }
+
 locals {
   # tflint-ignore: terraform_unused_declarations
   avm_azapi_header = join(" ", [for k, v in local.avm_azapi_headers : "${k}=${v}"])
 }
+
 locals {
   fork_avm = !anytrue([for r in local.valid_module_source_regex : can(regex(r, one(data.modtm_module_source.telemetry).module_source))])
 }
@@ -57,4 +59,3 @@ locals {
     "git::ssh:://git@github\\.com/[A|a]zure/.+",
   ]
 }
-

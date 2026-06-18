@@ -16,6 +16,7 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
     private_connection_resource_id = azapi_resource.mongo_cluster.id
     subresource_names              = ["MongoCluster"] # Updated guess based on provider error; 'mongodb' rejected.
   }
+
   dynamic "ip_configuration" {
     for_each = each.value.ip_configurations
 
@@ -24,6 +25,7 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
       private_ip_address = ip_configuration.value.private_ip_address
     }
   }
+
   dynamic "private_dns_zone_group" {
     for_each = length(each.value.private_dns_zone_resource_ids) > 0 ? ["this"] : []
 
@@ -54,6 +56,7 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
     private_connection_resource_id = azapi_resource.mongo_cluster.id
     subresource_names              = ["MongoCluster"]
   }
+
   dynamic "ip_configuration" {
     for_each = each.value.ip_configurations
 

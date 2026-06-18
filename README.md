@@ -24,7 +24,6 @@ The following requirements are needed by this module:
 The following resources are used by this module:
 
 - [azapi_resource.diagnostic_setting](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
-- [azapi_resource.firewall_rule](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azapi_resource.mongo_cluster](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
@@ -76,6 +75,14 @@ Type: `string`
 
 The following input variables are optional (have default values):
 
+### <a name="input_auth_config_allowed_modes"></a> [auth\_config\_allowed\_modes](#input\_auth\_config\_allowed\_modes)
+
+Description: (Optional, 2025-09-01+) Allowed authentication modes for the cluster: 'NativeAuth' and/or 'MicrosoftEntraID'. When null the API default (NativeAuth only) is used.
+
+Type: `list(string)`
+
+Default: `null`
+
 ### <a name="input_backup_policy_type"></a> [backup\_policy\_type](#input\_backup\_policy\_type)
 
 Description: Backup policy type (e.g., Periodic, Continuous7Days, Continuous30Days).
@@ -92,14 +99,23 @@ Type: `string`
 
 Default: `"M30"`
 
+### <a name="input_create_mode"></a> [create\_mode](#input\_create\_mode)
+
+Description: Cluster creation mode: 'Default', 'GeoReplica', 'PointInTimeRestore', or 'Replica'. Introduced in API version 2025-09-01.
+
+Type: `string`
+
+Default: `"Default"`
+
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
-Description: A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
+Description: Customer-managed key encryption settings for the MongoDB cluster. When specified, the cluster will be encrypted using a key from your Key Vault.  
+All properties are required when this is set. Includes:
+- `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
+- `key_name` - (Required) The name of the key in the vault.
 - `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
-  - `resource_id` - The resource ID of the user-assigned identity.
+- `user_assigned_identity` - (Required) A user-assigned managed identity that has access to the Key Vault. Includes:
+  - `resource_id` - (Required) The resource ID of the user-assigned identity.
 
 Type:
 
@@ -108,11 +124,19 @@ object({
     key_vault_resource_id = string
     key_name              = string
     key_version           = optional(string, null)
-    user_assigned_identity = optional(object({
+    user_assigned_identity = object({
       resource_id = string
-    }), null)
+    })
   })
 ```
+
+Default: `null`
+
+### <a name="input_data_api_mode"></a> [data\_api\_mode](#input\_data\_api\_mode)
+
+Description: (Optional, 2025-09-01+) Enable or disable the Mongo Data API: 'Enabled' or 'Disabled'. When null the API default is used.
+
+Type: `string`
 
 Default: `null`
 
@@ -236,6 +260,40 @@ Type: `number`
 
 Default: `null`
 
+### <a name="input_preview_features"></a> [preview\_features](#input\_preview\_features)
+
+Description: (Optional, 2025-09-01+) Preview features to opt into. Currently supported value: 'GeoReplicas'.
+
+Type: `list(string)`
+
+Default: `[]`
+
+### <a name="input_private_endpoint_connections"></a> [private\_endpoint\_connections](#input\_private\_endpoint\_connections)
+
+Description: A map of private endpoint connection approvals to manage on this cluster.  
+The map key is the connection name (as assigned by Azure when the private endpoint was created).
+
+- `private_link_service_connection_state.status`           - (Required) Approval state: 'Approved', 'Pending', or 'Rejected'.
+- `private_link_service_connection_state.description`      - (Optional) Reason for approval or rejection.
+- `private_link_service_connection_state.actions_required` - (Optional) Message about required consumer-side changes.
+
+> Note: use `var.private_endpoints` to *create* private endpoints. This variable manages the approval state
+> of connections that already exist (e.g. created externally or by `var.private_endpoints`).
+
+Type:
+
+```hcl
+map(object({
+    private_link_service_connection_state = object({
+      status           = string
+      description      = optional(string, null)
+      actions_required = optional(string, null)
+    })
+  }))
+```
+
+Default: `{}`
+
 ### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
 
 Description: A map of private endpoints to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -309,6 +367,36 @@ Type: `string`
 
 Default: `"Disabled"`
 
+### <a name="input_replica_parameters"></a> [replica\_parameters](#input\_replica\_parameters)
+
+Description: (Optional, 2025-09-01+) Source cluster parameters for geo-replica or replica creation. Required when create\_mode is 'GeoReplica' or 'Replica'.
+
+Type:
+
+```hcl
+object({
+    source_location    = string
+    source_resource_id = string
+  })
+```
+
+Default: `null`
+
+### <a name="input_restore_parameters"></a> [restore\_parameters](#input\_restore\_parameters)
+
+Description: (Optional, 2025-09-01+) Restore parameters for point-in-time restore. Required when create\_mode is 'PointInTimeRestore'.
+
+Type:
+
+```hcl
+object({
+    point_in_time_utc  = optional(string, null)
+    source_resource_id = optional(string, null)
+  })
+```
+
+Default: `null`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -365,6 +453,14 @@ Type: `number`
 
 Default: `32`
 
+### <a name="input_storage_type"></a> [storage\_type](#input\_storage\_type)
+
+Description: (Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. When null the API default (PremiumSSD) is used.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: (Optional) Tags of the resource.
@@ -372,6 +468,39 @@ Description: (Optional) Tags of the resource.
 Type: `map(string)`
 
 Default: `null`
+
+### <a name="input_users"></a> [users](#input\_users)
+
+Description: A map of users to create on this cluster. The map key is the user name.
+
+For **NativeAuth** users the key is the login name (alphanumeric + hyphens, 1-63 chars).  
+For **MicrosoftEntraID** users the key must be the Entra principal's object ID (GUID).
+
+- `roles`                                       - (Required) List of database roles. Each entry needs:
+  - `db`   - Database scope (e.g. `'admin'`).
+  - `role` - Role name. Currently only `'root'` is supported.
+- `identity_provider`                           - (Optional) Omit for native-auth users.
+  - `type`                                      - Must be `'MicrosoftEntraID'`.
+  - `properties.principal_type`                 - `'servicePrincipal'` or `'user'`.
+
+Type:
+
+```hcl
+map(object({
+    roles = list(object({
+      db   = string
+      role = string
+    }))
+    identity_provider = optional(object({
+      type = string
+      properties = optional(object({
+        principal_type = string
+      }), null)
+    }), null)
+  }))
+```
+
+Default: `{}`
 
 ## Outputs
 
@@ -411,7 +540,25 @@ Description: The resource ID of the MongoDB vCore cluster (required by AVM).
 
 ## Modules
 
-No modules.
+The following Modules are called:
+
+### <a name="module_firewall_rule"></a> [firewall\_rule](#module\_firewall\_rule)
+
+Source: ./modules/firewall_rule
+
+Version:
+
+### <a name="module_private_endpoint_connection"></a> [private\_endpoint\_connection](#module\_private\_endpoint\_connection)
+
+Source: ./modules/private_endpoint_connection
+
+Version:
+
+### <a name="module_user"></a> [user](#module\_user)
+
+Source: ./modules/user
+
+Version:
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
