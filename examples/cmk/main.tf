@@ -1,6 +1,4 @@
-terraform {
-  required_version = "~> 1.5"
-}
+# Terraform settings are defined in terraform.tf
 
 provider "azurerm" {
   features {
