@@ -151,6 +151,7 @@ module "test_private" {
   private_endpoints = {
     pe1 = {
       subnet_resource_id = azurerm_subnet.pe.id
+      tags               = {}
     }
   }
   private_endpoints_manage_dns_zone_group = false

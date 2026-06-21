@@ -109,7 +109,7 @@ Default: `"Default"`
 
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
-Description: Customer-managed key encryption settings for the MongoDB cluster. When specified, the cluster will be encrypted using a key from your Key Vault.
+Description: Customer-managed key encryption settings for the MongoDB cluster. When specified, the cluster will be encrypted using a key from your Key Vault.  
 Interface-compliant properties include:
 - `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
 - `key_name` - (Required) The name of the key in the vault.
@@ -117,7 +117,7 @@ Interface-compliant properties include:
 - `user_assigned_identity` - (Optional in AVM interface) An object with the user-assigned managed identity. Includes:
   - `resource_id` - (Required) The resource ID of the user-assigned identity.
 
-Note: This module requires `user_assigned_identity.resource_id` when `customer_managed_key` is set because
+Note: This module requires `user_assigned_identity.resource_id` when `customer_managed_key` is set because  
 the MongoDB 2025-09-01 API requires `keyEncryptionKeyIdentity` for customer-managed keys.
 
 Type:
@@ -187,8 +187,8 @@ Default: `null`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
-Description: This variable controls whether or not telemetry is enabled for the module.
-For more information see <https://aka.ms/avm/telemetryinfo>.
+Description: This variable controls whether or not telemetry is enabled for the module.  
+For more information see <https://aka.ms/avm/telemetryinfo>.  
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
@@ -273,7 +273,7 @@ Default: `[]`
 
 ### <a name="input_private_endpoint_connections"></a> [private\_endpoint\_connections](#input\_private\_endpoint\_connections)
 
-Description: A map of private endpoint connection approvals to manage on this cluster.
+Description: A map of private endpoint connection approvals to manage on this cluster.  
 The map key is the connection name (as assigned by Azure when the private endpoint was created).
 
 - `private_link_service_connection_state.status`           - (Required) Approval state: 'Approved', 'Pending', or 'Rejected'.
@@ -476,7 +476,7 @@ Default: `null`
 
 Description: A map of users to create on this cluster. The map key is the user name.
 
-For **NativeAuth** users the key is the login name (alphanumeric + hyphens, 1-63 chars).
+For **NativeAuth** users the key is the login name (alphanumeric + hyphens, 1-63 chars).  
 For **MicrosoftEntraID** users the key must be the Entra principal's object ID (GUID).
 
 - `roles`                                       - (Required) List of database roles. Each entry needs:
