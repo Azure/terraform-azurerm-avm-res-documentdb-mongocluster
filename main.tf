@@ -64,9 +64,10 @@ resource "azapi_resource" "this" {
       )
     }
   )
-  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  create_headers        = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers        = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers          = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  replace_triggers_refs = []
   # Allow-list of response fields exported into `output`. Server-computed/volatile fields
   # are intentionally excluded to keep `terraform plan` idempotent:
   #   - properties.backup.earliestRestoreTime  (timestamp updated on every refresh)
@@ -91,10 +92,21 @@ resource "azapi_resource" "this" {
     "properties.sharding",
     "properties.storage",
   ]
+  retry = var.retry
   # Schema validation enabled to catch drift with published swagger.
   schema_validation_enabled = true
   tags                      = var.tags
   update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+
+  dynamic "timeouts" {
+    for_each = var.timeouts == null ? [] : [var.timeouts]
+    content {
+      create = timeouts.value.create
+      read   = timeouts.value.read
+      update = timeouts.value.update
+      delete = timeouts.value.delete
+    }
+  }
 
   dynamic "identity" {
     for_each = local.managed_identity_type != null ? [1] : []

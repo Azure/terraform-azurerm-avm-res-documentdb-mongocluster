@@ -71,6 +71,27 @@ variable "resource_types" {
   nullable    = false
 }
 
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = null
+  description = "Retry configuration applied to the root azapi_resource. Defaults to null (provider defaults)."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = null
+  description = "Per-operation timeouts applied to the root azapi_resource. Defaults to null (provider defaults)."
+}
+
 variable "auth_config_allowed_modes" {
   type        = list(string)
   default     = null
