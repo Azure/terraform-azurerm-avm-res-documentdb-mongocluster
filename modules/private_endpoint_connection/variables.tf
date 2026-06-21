@@ -1,7 +1,12 @@
-variable "mongo_cluster_id" {
+variable "parent_id" {
   type        = string
   description = "Resource ID of the parent MongoDB vCore cluster."
   nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
+    error_message = "`parent_id` must be a valid Azure MongoDB vCore cluster resource ID."
+  }
 }
 
 variable "name" {

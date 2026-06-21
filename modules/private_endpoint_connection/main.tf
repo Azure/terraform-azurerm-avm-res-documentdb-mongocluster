@@ -4,7 +4,7 @@
 # Note: this is distinct from creating the private endpoint itself (handled by main.privateendpoint.tf).
 resource "azapi_resource" "this" {
   name      = var.name
-  parent_id = var.mongo_cluster_id
+  parent_id = var.parent_id
   type      = "Microsoft.DocumentDB/mongoClusters/privateEndpointConnections@2025-09-01"
 
   body = {

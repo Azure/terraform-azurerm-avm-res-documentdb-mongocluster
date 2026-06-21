@@ -137,7 +137,7 @@ module "private_endpoint_connection" {
   source   = "./modules/private_endpoint_connection"
   for_each = var.private_endpoint_connections
 
-  mongo_cluster_id                      = azapi_resource.this.id
+  parent_id                             = azapi_resource.this.id
   name                                  = each.key
   private_link_service_connection_state = each.value.private_link_service_connection_state
   avm_azapi_header                      = local.avm_azapi_header
