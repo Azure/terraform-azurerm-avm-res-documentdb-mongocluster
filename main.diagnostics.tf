@@ -6,7 +6,7 @@ resource "azapi_resource" "diagnostic_setting" {
   for_each = var.diagnostic_settings
 
   name      = coalesce(each.value.name, "ds-${var.name}-${each.key}")
-  parent_id = azapi_resource.mongo_cluster.id
+  parent_id = azapi_resource.this.id
   type      = "Microsoft.Insights/diagnosticSettings@2021-05-01-preview"
   # Build the properties dynamically, omitting nulls to satisfy the ARM schema
   body = jsonencode({

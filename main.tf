@@ -1,16 +1,16 @@
 locals {
   # Construct the resource ID once created (mirrors ARM format) for reuse.
-  mongo_cluster_id = azapi_resource.mongo_cluster.id
+  mongo_cluster_id = azapi_resource.this.id
 }
 
 data "azapi_client_config" "current" {}
 
 # Core MongoDB vCore Cluster (minimal placeholder). Add required properties before production use.
-resource "azapi_resource" "mongo_cluster" {
+resource "azapi_resource" "this" {
   location  = var.location
   name      = var.name
   parent_id = "/subscriptions/${data.azapi_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
-  type      = "Microsoft.DocumentDB/mongoClusters@2025-09-01"
+  type      = var.resource_types.mongo_cluster
   body = merge(
     {
       properties = merge(
@@ -113,7 +113,7 @@ module "firewall_rule" {
   for_each = var.public_network_access == "Enabled" ? { for r in var.firewall_rules : r.name => r } : {}
 
   end_ip           = each.value.end_ip
-  mongo_cluster_id = azapi_resource.mongo_cluster.id
+  mongo_cluster_id = azapi_resource.this.id
   name             = each.key
   start_ip         = each.value.start_ip
   avm_azapi_header = local.avm_azapi_header
@@ -125,7 +125,7 @@ module "private_endpoint_connection" {
   source   = "./modules/private_endpoint_connection"
   for_each = var.private_endpoint_connections
 
-  mongo_cluster_id                      = azapi_resource.mongo_cluster.id
+  mongo_cluster_id                      = azapi_resource.this.id
   name                                  = each.key
   private_link_service_connection_state = each.value.private_link_service_connection_state
   avm_azapi_header                      = local.avm_azapi_header
@@ -137,7 +137,7 @@ module "user" {
   source   = "./modules/user"
   for_each = var.users
 
-  mongo_cluster_id  = azapi_resource.mongo_cluster.id
+  mongo_cluster_id  = azapi_resource.this.id
   name              = each.key
   roles             = each.value.roles
   avm_azapi_header  = local.avm_azapi_header

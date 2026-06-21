@@ -12,7 +12,7 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
   private_service_connection {
     is_manual_connection           = false
     name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
-    private_connection_resource_id = azapi_resource.mongo_cluster.id
+    private_connection_resource_id = azapi_resource.this.id
     subresource_names              = ["MongoCluster"] # Updated guess based on provider error; 'mongodb' rejected.
   }
 
@@ -52,7 +52,7 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
   private_service_connection {
     is_manual_connection           = false
     name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
-    private_connection_resource_id = azapi_resource.mongo_cluster.id
+    private_connection_resource_id = azapi_resource.this.id
     subresource_names              = ["MongoCluster"]
   }
 

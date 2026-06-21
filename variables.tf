@@ -57,6 +57,15 @@ variable "resource_group_name" {
   description = "The resource group where the resources will be deployed."
 }
 
+variable "resource_types" {
+  type = object({
+    mongo_cluster = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
+  })
+  default     = {}
+  description = "Optional override for the MongoDB vCore cluster resource type and API version."
+  nullable    = false
+}
+
 variable "auth_config_allowed_modes" {
   type        = list(string)
   default     = null
