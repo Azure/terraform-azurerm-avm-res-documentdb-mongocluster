@@ -64,6 +64,9 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
   }
 
   lifecycle {
+    # In this unmanaged variant, DNS zone group links may be created/updated outside this module
+    # (for example by Azure Policy). Ignoring this nested block prevents Terraform from repeatedly
+    # trying to remove externally-managed `private_dns_zone_group` configuration.
     ignore_changes = [private_dns_zone_group]
   }
 }
