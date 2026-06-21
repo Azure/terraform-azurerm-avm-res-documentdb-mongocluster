@@ -18,6 +18,7 @@ locals {
       }
     ]
   ]) : "${assoc.pe_key}-${assoc.asg_key}" => assoc }
+  parent_resource_group_name         = provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", var.parent_id).resource_group_name
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
 
   managed_identity_type = (

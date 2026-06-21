@@ -3,13 +3,11 @@ locals {
   mongo_cluster_id = azapi_resource.this.id
 }
 
-data "azapi_client_config" "current" {}
-
 # Core MongoDB vCore Cluster (minimal placeholder). Add required properties before production use.
 resource "azapi_resource" "this" {
   location  = var.location
   name      = var.name
-  parent_id = "/subscriptions/${data.azapi_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
+  parent_id = var.parent_id
   type      = var.resource_types.mongo_cluster
   body = merge(
     {

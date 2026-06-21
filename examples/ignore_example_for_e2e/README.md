@@ -65,7 +65,7 @@ module "test" {
   # ...
   location            = azurerm_resource_group.this.location
   name                = "mongo-vcore-ignored"
-  resource_group_name = azurerm_resource_group.this.name
+  parent_id           = azurerm_resource_group.this.id
   enable_telemetry    = var.enable_telemetry # see variables.tf
 }
 ```

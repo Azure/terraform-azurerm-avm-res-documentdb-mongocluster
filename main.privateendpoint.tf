@@ -4,7 +4,7 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
 
   location                      = each.value.location != null ? each.value.location : var.location
   name                          = each.value.name != null ? each.value.name : "pe-${var.name}"
-  resource_group_name           = each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name
+  resource_group_name           = each.value.resource_group_name != null ? each.value.resource_group_name : local.parent_resource_group_name
   subnet_id                     = each.value.subnet_resource_id
   custom_network_interface_name = each.value.network_interface_name
   tags                          = each.value.tags
@@ -44,7 +44,7 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
 
   location                      = each.value.location != null ? each.value.location : var.location
   name                          = each.value.name != null ? each.value.name : "pe-${var.name}"
-  resource_group_name           = each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name
+  resource_group_name           = each.value.resource_group_name != null ? each.value.resource_group_name : local.parent_resource_group_name
   subnet_id                     = each.value.subnet_resource_id
   custom_network_interface_name = each.value.network_interface_name
   tags                          = each.value.tags

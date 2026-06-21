@@ -110,7 +110,7 @@ module "test_cmk" {
   administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
   name                         = "cosmon-${random_string.resname.result}cmk"
-  resource_group_name          = azurerm_resource_group.this.name
+  parent_id                    = azurerm_resource_group.this.id
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M30"
   enable_telemetry             = var.enable_telemetry

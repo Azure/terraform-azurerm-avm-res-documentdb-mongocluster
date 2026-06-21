@@ -51,10 +51,15 @@ variable "name" {
   }
 }
 
-# This is required for most resource modules
-variable "resource_group_name" {
+variable "parent_id" {
   type        = string
-  description = "The resource group where the resources will be deployed."
+  description = "The fully-qualified ARM resource ID of the resource group where the MongoDB vCore cluster will be deployed."
+  nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", var.parent_id))
+    error_message = "`parent_id` must be a valid Azure resource group resource ID."
+  }
 }
 
 variable "resource_types" {
