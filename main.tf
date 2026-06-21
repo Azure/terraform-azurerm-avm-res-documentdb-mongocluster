@@ -85,7 +85,8 @@ resource "azapi_resource" "mongo_cluster" {
   lifecycle {
     # API does not return the secret password -> avoid perpetual diffs
     ignore_changes = [
-      body.properties.administrator.password
+      body.properties.administrator.password,
+      output.properties.backup
     ]
   }
 }

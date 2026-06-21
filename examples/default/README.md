@@ -210,10 +210,6 @@ The following outputs are exported:
 
 Description: Mongo cluster ID for private endpoint example.
 
-### <a name="output_test_private_pe_ids"></a> [test\_private\_pe\_ids](#output\_test\_private\_pe\_ids)
-
-Description: Private endpoint resource IDs for the test\_private module (map).
-
 ## Modules
 
 The following Modules are called:
