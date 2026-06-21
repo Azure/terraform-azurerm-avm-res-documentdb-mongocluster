@@ -62,36 +62,6 @@ variable "parent_id" {
   }
 }
 
-variable "resource_types" {
-  type = object({
-    mongo_cluster = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
-  })
-  default     = {}
-  description = "Optional override for the MongoDB vCore cluster resource type and API version."
-  nullable    = false
-}
-
-variable "retry" {
-  type = object({
-    error_message_regex  = optional(list(string))
-    interval_seconds     = optional(number)
-    max_interval_seconds = optional(number)
-  })
-  default     = null
-  description = "Retry configuration applied to the root azapi_resource. Defaults to null (provider defaults)."
-}
-
-variable "timeouts" {
-  type = object({
-    create = optional(string)
-    read   = optional(string)
-    update = optional(string)
-    delete = optional(string)
-  })
-  default     = null
-  description = "Per-operation timeouts applied to the root azapi_resource. Defaults to null (provider defaults)."
-}
-
 variable "auth_config_allowed_modes" {
   type        = list(string)
   default     = []
@@ -458,6 +428,15 @@ variable "replica_parameters" {
   }
 }
 
+variable "resource_types" {
+  type = object({
+    mongo_cluster = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
+  })
+  default     = {}
+  description = "Optional override for the MongoDB vCore cluster resource type and API version."
+  nullable    = false
+}
+
 variable "restore_parameters" {
   type = object({
     point_in_time_utc  = optional(string, null)
@@ -470,6 +449,16 @@ variable "restore_parameters" {
     condition     = var.create_mode == "PointInTimeRestore" ? var.restore_parameters != null : var.restore_parameters == null
     error_message = "restore_parameters must be set when create_mode is 'PointInTimeRestore', and must be null for other create_mode values."
   }
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = null
+  description = "Retry configuration applied to the root azapi_resource. Defaults to null (provider defaults)."
 }
 
 variable "role_assignments" {
@@ -549,6 +538,17 @@ variable "tags" {
   type        = map(string)
   default     = null
   description = "(Optional) Tags of the resource."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = null
+  description = "Per-operation timeouts applied to the root azapi_resource. Defaults to null (provider defaults)."
 }
 
 variable "users" {

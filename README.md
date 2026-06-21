@@ -24,7 +24,7 @@ The following requirements are needed by this module:
 The following resources are used by this module:
 
 - [azapi_resource.diagnostic_setting](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
-- [azapi_resource.mongo_cluster](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
@@ -32,7 +32,6 @@ The following resources are used by this module:
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
-- [azapi_client_config.current](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
@@ -65,9 +64,9 @@ Description: The name of the this resource.
 
 Type: `string`
 
-### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
+### <a name="input_parent_id"></a> [parent\_id](#input\_parent\_id)
 
-Description: The resource group where the resources will be deployed.
+Description: The fully-qualified ARM resource ID of the resource group where the MongoDB vCore cluster will be deployed.
 
 Type: `string`
 
@@ -77,11 +76,11 @@ The following input variables are optional (have default values):
 
 ### <a name="input_auth_config_allowed_modes"></a> [auth\_config\_allowed\_modes](#input\_auth\_config\_allowed\_modes)
 
-Description: (Optional, 2025-09-01+) Allowed authentication modes for the cluster: 'NativeAuth' and/or 'MicrosoftEntraID'. When null the API default (NativeAuth only) is used.
+Description: (Optional, 2025-09-01+) Allowed authentication modes for the cluster: 'NativeAuth' and/or 'MicrosoftEntraID'. When empty the API default (NativeAuth only) is used.
 
 Type: `list(string)`
 
-Default: `null`
+Default: `[]`
 
 ### <a name="input_backup_policy_type"></a> [backup\_policy\_type](#input\_backup\_policy\_type)
 
@@ -385,6 +384,20 @@ object({
 
 Default: `null`
 
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: Optional override for the MongoDB vCore cluster resource type and API version.
+
+Type:
+
+```hcl
+object({
+    mongo_cluster = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_restore_parameters"></a> [restore\_parameters](#input\_restore\_parameters)
 
 Description: (Optional, 2025-09-01+) Restore parameters for point-in-time restore. Required when create\_mode is 'PointInTimeRestore'.
@@ -395,6 +408,22 @@ Type:
 object({
     point_in_time_utc  = optional(string, null)
     source_resource_id = optional(string, null)
+  })
+```
+
+Default: `null`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: Retry configuration applied to the root azapi\_resource. Defaults to null (provider defaults).
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
   })
 ```
 
@@ -469,6 +498,23 @@ Default: `"PremiumSSD"`
 Description: (Optional) Tags of the resource.
 
 Type: `map(string)`
+
+Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: Per-operation timeouts applied to the root azapi\_resource. Defaults to null (provider defaults).
+
+Type:
+
+```hcl
+object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+```
 
 Default: `null`
 
