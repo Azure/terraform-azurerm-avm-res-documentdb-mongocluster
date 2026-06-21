@@ -67,6 +67,8 @@ resource "azapi_resource" "this" {
   create_headers        = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   delete_headers        = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   read_headers          = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  # No create-only body paths have been identified yet for this resource; keep the AVM
+  # interface explicit so immutable paths can be added here if the API proves any are required.
   replace_triggers_refs = []
   # Allow-list of response fields exported into `output`. Server-computed/volatile fields
   # are intentionally excluded to keep `terraform plan` idempotent:
