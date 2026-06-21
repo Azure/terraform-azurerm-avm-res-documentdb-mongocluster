@@ -1,4 +1,3 @@
-# TODO remove this code & var.private_endpoints if private link is not support.  Note it must be included in this module if it is supported.
 resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
   # Only create this variant when we are managing the private DNS zone group internally
   for_each = var.private_endpoints_manage_dns_zone_group ? var.private_endpoints : {}

@@ -81,13 +81,6 @@ resource "azapi_resource" "mongo_cluster" {
       identity_ids = var.managed_identities.user_assigned_resource_ids
     }
   }
-
-  lifecycle {
-    # API does not return the secret password -> avoid perpetual diffs
-    ignore_changes = [
-      body.properties.administrator.password
-    ]
-  }
 }
 
 # Firewall rules - delegated to the firewall_rule submodule (only created when public network access is Enabled)
