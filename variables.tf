@@ -430,10 +430,13 @@ variable "replica_parameters" {
 
 variable "resource_types" {
   type = object({
-    mongo_cluster = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
+    mongo_cluster               = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
+    firewall_rule               = optional(string, "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-09-01")
+    private_endpoint_connection = optional(string, "Microsoft.DocumentDB/mongoClusters/privateEndpointConnections@2025-09-01")
+    user                        = optional(string, "Microsoft.DocumentDB/mongoClusters/users@2025-09-01")
   })
   default     = {}
-  description = "Optional override for the MongoDB vCore cluster resource type and API version."
+  description = "Optional overrides for the MongoDB vCore cluster resource types and API versions."
   nullable    = false
 }
 

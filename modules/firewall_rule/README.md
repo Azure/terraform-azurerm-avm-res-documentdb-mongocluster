@@ -28,15 +28,15 @@ Description: End IPv4 address of the firewall rule range.
 
 Type: `string`
 
-### <a name="input_mongo_cluster_id"></a> [mongo\_cluster\_id](#input\_mongo\_cluster\_id)
-
-Description: Resource ID of the parent MongoDB vCore cluster.
-
-Type: `string`
-
 ### <a name="input_name"></a> [name](#input\_name)
 
 Description: Firewall rule name. Must start with an alphanumeric character and may contain alphanumerics, hyphens, underscores and dots.
+
+Type: `string`
+
+### <a name="input_parent_id"></a> [parent\_id](#input\_parent\_id)
+
+Description: Resource ID of the parent MongoDB vCore cluster.
 
 Type: `string`
 
@@ -65,6 +65,53 @@ Description: Whether to emit AVM telemetry headers. Passed from the root module.
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: Optional override for the firewall rule resource type and API version.
+
+Type:
+
+```hcl
+object({
+    this = optional(string, "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-09-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: Retry configuration applied to the firewall rule azapi\_resource. Defaults to null (provider defaults).
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+```
+
+Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: Per-operation timeouts applied to the firewall rule azapi\_resource. Defaults to null (provider defaults).
+
+Type:
+
+```hcl
+object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+```
+
+Default: `null`
 
 ## Outputs
 

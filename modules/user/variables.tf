@@ -1,7 +1,12 @@
-variable "mongo_cluster_id" {
+variable "parent_id" {
   type        = string
   description = "Resource ID of the parent MongoDB vCore cluster."
   nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
+    error_message = "parent_id must be a valid Azure MongoDB vCore cluster resource ID."
+  }
 }
 
 variable "resource_types" {
@@ -72,11 +77,11 @@ DESCRIPTION
     error_message = "identity_provider.type must be 'MicrosoftEntraID'."
   }
   validation {
-    condition = var.identity_provider == null || var.identity_provider.properties == null || contains(
-      ["servicePrincipal", "user"],
-      var.identity_provider.properties.principal_type
+    condition = var.identity_provider == null || (
+      var.identity_provider.properties != null &&
+      contains(["servicePrincipal", "user"], var.identity_provider.properties.principal_type)
     )
-    error_message = "identity_provider.properties.principal_type must be 'servicePrincipal' or 'user'."
+    error_message = "identity_provider.properties.principal_type must be set to 'servicePrincipal' or 'user' when identity_provider is specified."
   }
 }
 

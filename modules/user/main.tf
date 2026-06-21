@@ -1,6 +1,6 @@
 resource "azapi_resource" "this" {
   name      = var.name
-  parent_id = var.mongo_cluster_id
+  parent_id = var.parent_id
   type      = var.resource_types.this
 
   body = {

@@ -124,10 +124,15 @@ module "firewall_rule" {
   source   = "./modules/firewall_rule"
   for_each = var.public_network_access == "Enabled" ? { for r in var.firewall_rules : r.name => r } : {}
 
-  end_ip           = each.value.end_ip
-  mongo_cluster_id = azapi_resource.this.id
-  name             = each.key
+  end_ip    = each.value.end_ip
+  name      = each.key
+  parent_id = azapi_resource.this.id
+  resource_types = {
+    this = var.resource_types.firewall_rule
+  }
+  retry            = var.retry
   start_ip         = each.value.start_ip
+  timeouts         = var.timeouts
   avm_azapi_header = local.avm_azapi_header
   enable_telemetry = var.enable_telemetry
 }
@@ -137,11 +142,16 @@ module "private_endpoint_connection" {
   source   = "./modules/private_endpoint_connection"
   for_each = var.private_endpoint_connections
 
-  parent_id                             = azapi_resource.this.id
   name                                  = each.key
+  parent_id                             = azapi_resource.this.id
   private_link_service_connection_state = each.value.private_link_service_connection_state
-  avm_azapi_header                      = local.avm_azapi_header
-  enable_telemetry                      = var.enable_telemetry
+  resource_types = {
+    this = var.resource_types.private_endpoint_connection
+  }
+  retry            = var.retry
+  timeouts         = var.timeouts
+  avm_azapi_header = local.avm_azapi_header
+  enable_telemetry = var.enable_telemetry
 }
 
 # Cluster users - delegated to the user submodule
@@ -149,9 +159,14 @@ module "user" {
   source   = "./modules/user"
   for_each = var.users
 
-  mongo_cluster_id  = azapi_resource.this.id
-  name              = each.key
+  name      = each.key
+  parent_id = azapi_resource.this.id
+  resource_types = {
+    this = var.resource_types.user
+  }
+  retry             = var.retry
   roles             = each.value.roles
+  timeouts          = var.timeouts
   avm_azapi_header  = local.avm_azapi_header
   enable_telemetry  = var.enable_telemetry
   identity_provider = each.value.identity_provider

@@ -22,16 +22,16 @@ The following resources are used by this module:
 
 The following input variables are required:
 
-### <a name="input_mongo_cluster_id"></a> [mongo\_cluster\_id](#input\_mongo\_cluster\_id)
-
-Description: Resource ID of the parent MongoDB vCore cluster.
-
-Type: `string`
-
 ### <a name="input_name"></a> [name](#input\_name)
 
 Description: User name. For NativeAuth users this is the login name (1-63 chars, alphanumeric and hyphens).  
 For MicrosoftEntraID users this must be the Entra principal's object ID (GUID).
+
+Type: `string`
+
+### <a name="input_parent_id"></a> [parent\_id](#input\_parent\_id)
+
+Description: Resource ID of the parent MongoDB vCore cluster.
 
 Type: `string`
 

@@ -1,6 +1,20 @@
-variable "mongo_cluster_id" {
+variable "parent_id" {
   type        = string
   description = "Resource ID of the parent MongoDB vCore cluster."
+  nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
+    error_message = "parent_id must be a valid Azure MongoDB vCore cluster resource ID."
+  }
+}
+
+variable "resource_types" {
+  type = object({
+    this = optional(string, "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-09-01")
+  })
+  default     = {}
+  description = "Optional override for the firewall rule resource type and API version."
   nullable    = false
 }
 
@@ -48,4 +62,25 @@ variable "avm_azapi_header" {
   type        = string
   default     = null
   description = "Pre-computed AVM User-Agent header string from the root module. Pass null when telemetry is disabled."
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = null
+  description = "Retry configuration applied to the firewall rule azapi_resource. Defaults to null (provider defaults)."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = null
+  description = "Per-operation timeouts applied to the firewall rule azapi_resource. Defaults to null (provider defaults)."
 }
