@@ -531,7 +531,7 @@ Description: Name of the MongoDB vCore cluster.
 
 ### <a name="output_mongo_cluster_properties"></a> [mongo\_cluster\_properties](#output\_mongo\_cluster\_properties)
 
-Description: Raw properties object returned by the AzAPI provider (may include status, sizing, endpoints). Subject to change with API versions.
+Description: Selected stable properties returned by the AzAPI provider. Volatile/server-computed fields (properties.backup.earliestRestoreTime and properties.privateEndpointConnections) are intentionally excluded via response\_export\_values to keep plans idempotent. Subject to change with API versions.
 
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 

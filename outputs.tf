@@ -26,8 +26,8 @@ output "mongo_cluster_name" {
 }
 
 output "mongo_cluster_properties" {
-  description = "Raw properties object returned by the AzAPI provider (may include status, sizing, endpoints). Subject to change with API versions."
-  value       = azapi_resource.mongo_cluster.output.properties
+  description = "Selected stable properties returned by the AzAPI provider. Volatile/server-computed fields (properties.backup.earliestRestoreTime and properties.privateEndpointConnections) are intentionally excluded via response_export_values to keep plans idempotent. Subject to change with API versions."
+  value       = try(azapi_resource.mongo_cluster.output.properties, null)
 }
 
 output "private_endpoints" {

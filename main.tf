@@ -69,6 +69,30 @@ resource "azapi_resource" "mongo_cluster" {
   create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  # Allow-list of response fields exported into `output`. Server-computed/volatile fields
+  # are intentionally excluded to keep `terraform plan` idempotent:
+  #   - properties.backup.earliestRestoreTime  (timestamp updated on every refresh)
+  #   - properties.privateEndpointConnections  (populated asynchronously when PEs attach)
+  response_export_values = [
+    "identity",
+    "properties.administrator.userName",
+    "properties.authConfig",
+    "properties.clusterStatus",
+    "properties.compute",
+    "properties.connectionString",
+    "properties.connectionStrings",
+    "properties.createMode",
+    "properties.dataApi",
+    "properties.encryption",
+    "properties.highAvailability",
+    "properties.previewFeatures",
+    "properties.provisioningState",
+    "properties.publicNetworkAccess",
+    "properties.replica",
+    "properties.serverVersion",
+    "properties.sharding",
+    "properties.storage",
+  ]
   # Schema validation enabled to catch drift with published swagger.
   schema_validation_enabled = true
   tags                      = var.tags
