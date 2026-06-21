@@ -415,6 +415,11 @@ variable "replica_parameters" {
   })
   default     = null
   description = "(Optional, 2025-09-01+) Source cluster parameters for geo-replica or replica creation. Required when create_mode is 'GeoReplica' or 'Replica'."
+
+  validation {
+    condition     = contains(["GeoReplica", "Replica"], var.create_mode) ? var.replica_parameters != null : var.replica_parameters == null
+    error_message = "replica_parameters must be set when create_mode is 'GeoReplica' or 'Replica', and must be null for other create_mode values."
+  }
 }
 
 variable "restore_parameters" {
@@ -424,6 +429,11 @@ variable "restore_parameters" {
   })
   default     = null
   description = "(Optional, 2025-09-01+) Restore parameters for point-in-time restore. Required when create_mode is 'PointInTimeRestore'."
+
+  validation {
+    condition     = var.create_mode == "PointInTimeRestore" ? var.restore_parameters != null : var.restore_parameters == null
+    error_message = "restore_parameters must be set when create_mode is 'PointInTimeRestore', and must be null for other create_mode values."
+  }
 }
 
 variable "role_assignments" {
