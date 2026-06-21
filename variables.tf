@@ -94,11 +94,12 @@ variable "timeouts" {
 
 variable "auth_config_allowed_modes" {
   type        = list(string)
-  default     = null
-  description = "(Optional, 2025-09-01+) Allowed authentication modes for the cluster: 'NativeAuth' and/or 'MicrosoftEntraID'. When null the API default (NativeAuth only) is used."
+  default     = []
+  description = "(Optional, 2025-09-01+) Allowed authentication modes for the cluster: 'NativeAuth' and/or 'MicrosoftEntraID'. When empty the API default (NativeAuth only) is used."
+  nullable    = false
 
   validation {
-    condition     = var.auth_config_allowed_modes == null || alltrue([for m in var.auth_config_allowed_modes : contains(["NativeAuth", "MicrosoftEntraID"], m)])
+    condition     = alltrue([for m in var.auth_config_allowed_modes : contains(["NativeAuth", "MicrosoftEntraID"], m)])
     error_message = "auth_config_allowed_modes entries must each be 'NativeAuth' or 'MicrosoftEntraID'."
   }
 }

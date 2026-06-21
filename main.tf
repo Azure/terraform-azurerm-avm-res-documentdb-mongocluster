@@ -33,7 +33,7 @@ resource "azapi_resource" "this" {
           publicNetworkAccess = var.public_network_access
         },
         # Add optional properties only if they have values (API rejects null values; properties must be omitted)
-        var.auth_config_allowed_modes != null ? {
+        length(var.auth_config_allowed_modes) > 0 ? {
           authConfig = {
             allowedModes = var.auth_config_allowed_modes
           }
@@ -64,9 +64,9 @@ resource "azapi_resource" "this" {
       )
     }
   )
-  create_headers        = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  delete_headers        = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  read_headers          = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   # No create-only body paths have been identified yet for this resource; keep the AVM
   # interface explicit so immutable paths can be added here if the API proves any are required.
   replace_triggers_refs = []
