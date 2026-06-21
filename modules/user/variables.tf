@@ -4,6 +4,15 @@ variable "mongo_cluster_id" {
   nullable    = false
 }
 
+variable "resource_types" {
+  type = object({
+    this = optional(string, "Microsoft.DocumentDB/mongoClusters/users@2025-09-01")
+  })
+  default     = {}
+  description = "Optional override for the user resource type and API version."
+  nullable    = false
+}
+
 variable "name" {
   type        = string
   description = <<DESCRIPTION
@@ -82,4 +91,25 @@ variable "avm_azapi_header" {
   type        = string
   default     = null
   description = "Pre-computed AVM User-Agent header string from the root module. Pass null when telemetry is disabled."
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = null
+  description = "Retry configuration applied to the user azapi_resource. Defaults to null (provider defaults)."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = null
+  description = "Per-operation timeouts applied to the user azapi_resource. Defaults to null (provider defaults)."
 }
