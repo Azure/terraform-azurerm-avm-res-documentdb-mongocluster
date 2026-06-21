@@ -124,17 +124,17 @@ module "firewall_rule" {
   source   = "./modules/firewall_rule"
   for_each = var.public_network_access == "Enabled" ? { for r in var.firewall_rules : r.name => r } : {}
 
-  end_ip    = each.value.end_ip
-  name      = each.key
-  parent_id = azapi_resource.this.id
+  end_ip           = each.value.end_ip
+  name             = each.key
+  parent_id        = azapi_resource.this.id
+  start_ip         = each.value.start_ip
+  avm_azapi_header = local.avm_azapi_header
+  enable_telemetry = var.enable_telemetry
   resource_types = {
     this = var.resource_types.firewall_rule
   }
-  retry            = var.retry
-  start_ip         = each.value.start_ip
-  timeouts         = var.timeouts
-  avm_azapi_header = local.avm_azapi_header
-  enable_telemetry = var.enable_telemetry
+  retry    = var.retry
+  timeouts = var.timeouts
 }
 
 # Private endpoint connection approvals - delegated to the private_endpoint_connection submodule
@@ -145,13 +145,13 @@ module "private_endpoint_connection" {
   name                                  = each.key
   parent_id                             = azapi_resource.this.id
   private_link_service_connection_state = each.value.private_link_service_connection_state
+  avm_azapi_header                      = local.avm_azapi_header
+  enable_telemetry                      = var.enable_telemetry
   resource_types = {
     this = var.resource_types.private_endpoint_connection
   }
-  retry            = var.retry
-  timeouts         = var.timeouts
-  avm_azapi_header = local.avm_azapi_header
-  enable_telemetry = var.enable_telemetry
+  retry    = var.retry
+  timeouts = var.timeouts
 }
 
 # Cluster users - delegated to the user submodule
@@ -159,17 +159,17 @@ module "user" {
   source   = "./modules/user"
   for_each = var.users
 
-  name      = each.key
-  parent_id = azapi_resource.this.id
-  resource_types = {
-    this = var.resource_types.user
-  }
-  retry             = var.retry
+  name              = each.key
+  parent_id         = azapi_resource.this.id
   roles             = each.value.roles
-  timeouts          = var.timeouts
   avm_azapi_header  = local.avm_azapi_header
   enable_telemetry  = var.enable_telemetry
   identity_provider = each.value.identity_provider
+  resource_types = {
+    this = var.resource_types.user
+  }
+  retry    = var.retry
+  timeouts = var.timeouts
 }
 
 # (Optional) Management lock support (AVM interface) - scope updated to cluster once properties finalized.
