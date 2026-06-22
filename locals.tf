@@ -18,5 +18,32 @@ locals {
       }
     ]
   ]) : "${assoc.pe_key}-${assoc.asg_key}" => assoc }
+  parent_resource_group_name         = provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", var.parent_id).resource_group_name
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
+
+  managed_identity_type = (
+    var.managed_identities.system_assigned && length(var.managed_identities.user_assigned_resource_ids) > 0
+    ? "SystemAssigned, UserAssigned"
+    : var.managed_identities.system_assigned
+    ? "SystemAssigned"
+    : length(var.managed_identities.user_assigned_resource_ids) > 0
+    ? "UserAssigned"
+    : null
+  )
+
+  # 2025-09-01: Customer-managed key encryption block. Requires user-assigned identity (validated in variable).
+  # The key URL is constructed from the Key Vault resource ID, key name, and optional version.
+  cmk_encryption = var.customer_managed_key == null ? null : {
+    customerManagedKeyEncryption = {
+      keyEncryptionKeyIdentity = {
+        identityType                   = "UserAssignedIdentity"
+        userAssignedIdentityResourceId = var.customer_managed_key.user_assigned_identity.resource_id
+      }
+      keyEncryptionKeyUrl = join("/", compact([
+        "https://${regex("/vaults/([^/]+)$", var.customer_managed_key.key_vault_resource_id)[0]}.vault.azure.net/keys",
+        var.customer_managed_key.key_name,
+        var.customer_managed_key.key_version,
+      ]))
+    }
+  }
 }

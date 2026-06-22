@@ -63,10 +63,10 @@ module "test" {
   administrator_login_password = "Ign0reM3!Passw0rd"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
   # ...
-  location            = azurerm_resource_group.this.location
-  name                = "mongo-vcore-ignored"
-  resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = var.enable_telemetry # see variables.tf
+  location         = azurerm_resource_group.this.location
+  name             = "mongo-vcore-ignored"
+  parent_id        = azurerm_resource_group.this.id
+  enable_telemetry = var.enable_telemetry # see variables.tf
 }
 ```
 

@@ -1,4 +1,15 @@
 # ---------------------------------------------
+# 2025-09-01 new properties
+# All variables below default to null / empty so existing deployments remain unaffected.
+# ---------------------------------------------
+
+
+# ---------------------------------------------
+# Child resource submodule variables
+# ---------------------------------------------
+
+
+# ---------------------------------------------
 # MongoDB vCore specific variables (AzAPI)
 # ---------------------------------------------
 variable "administrator_login" {
@@ -40,10 +51,27 @@ variable "name" {
   }
 }
 
-# This is required for most resource modules
-variable "resource_group_name" {
+variable "parent_id" {
   type        = string
-  description = "The resource group where the resources will be deployed."
+  description = "The fully-qualified ARM resource ID of the resource group where the MongoDB vCore cluster will be deployed."
+  nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", var.parent_id))
+    error_message = "`parent_id` must be a valid Azure resource group resource ID."
+  }
+}
+
+variable "auth_config_allowed_modes" {
+  type        = list(string)
+  default     = []
+  description = "(Optional, 2025-09-01+) Allowed authentication modes for the cluster: 'NativeAuth' and/or 'MicrosoftEntraID'. When empty the API default (NativeAuth only) is used."
+  nullable    = false
+
+  validation {
+    condition     = alltrue([for m in var.auth_config_allowed_modes : contains(["NativeAuth", "MicrosoftEntraID"], m)])
+    error_message = "auth_config_allowed_modes entries must each be 'NativeAuth' or 'MicrosoftEntraID'."
+  }
 }
 
 # tflint-ignore: terraform_unused_declarations
@@ -71,9 +99,20 @@ variable "compute_tier" {
   }
 }
 
+variable "create_mode" {
+  type        = string
+  default     = "Default"
+  description = "Cluster creation mode: 'Default', 'GeoReplica', 'PointInTimeRestore', or 'Replica'. Introduced in API version 2025-09-01."
+  nullable    = false
+
+  validation {
+    condition     = contains(["Default", "GeoReplica", "PointInTimeRestore", "Replica"], var.create_mode)
+    error_message = "create_mode must be one of: Default, GeoReplica, PointInTimeRestore, Replica."
+  }
+}
+
 # required AVM interfaces
 # remove only if not supported by the resource
-# tflint-ignore: terraform_unused_declarations
 variable "customer_managed_key" {
   type = object({
     key_vault_resource_id = string
@@ -85,13 +124,38 @@ variable "customer_managed_key" {
   })
   default     = null
   description = <<DESCRIPTION
-A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
+Customer-managed key encryption settings for the MongoDB cluster. When specified, the cluster will be encrypted using a key from your Key Vault.
+Interface-compliant properties include:
+- `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
+- `key_name` - (Required) The name of the key in the vault.
 - `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
-  - `resource_id` - The resource ID of the user-assigned identity.
+- `user_assigned_identity` - (Optional in AVM interface) An object with the user-assigned managed identity. Includes:
+  - `resource_id` - (Required) The resource ID of the user-assigned identity.
+
+Note: This module requires `user_assigned_identity.resource_id` when `customer_managed_key` is set because
+the MongoDB 2025-09-01 API requires `keyEncryptionKeyIdentity` for customer-managed keys.
 DESCRIPTION
+
+  validation {
+    condition = var.customer_managed_key == null || (
+      var.customer_managed_key.key_vault_resource_id != null &&
+      var.customer_managed_key.key_name != null &&
+      var.customer_managed_key.user_assigned_identity != null &&
+      var.customer_managed_key.user_assigned_identity.resource_id != null
+    )
+    error_message = "When customer_managed_key is set, key_vault_resource_id, key_name, and user_assigned_identity.resource_id are all required. The user-assigned identity is needed to access the Key Vault for encryption operations."
+  }
+}
+
+variable "data_api_mode" {
+  type        = string
+  default     = null
+  description = "(Optional, 2025-09-01+) Enable or disable the Mongo Data API: 'Enabled' or 'Disabled'. When null the API default is used."
+
+  validation {
+    condition     = var.data_api_mode == null || contains(["Enabled", "Disabled"], var.data_api_mode)
+    error_message = "data_api_mode must be 'Enabled' or 'Disabled'."
+  }
 }
 
 # tflint-ignore: terraform_unused_declarations
@@ -211,7 +275,6 @@ DESCRIPTION
   }
 }
 
-# tflint-ignore: terraform_unused_declarations
 variable "managed_identities" {
   type = object({
     system_assigned            = optional(bool, false)
@@ -232,6 +295,46 @@ variable "node_count" {
   type        = number
   default     = null
   description = "(Deprecated) Previous preview node_count for nodeGroupSpecs. Ignored in 2024-07-01 api; use shard_count instead."
+}
+
+variable "preview_features" {
+  type        = list(string)
+  default     = []
+  description = "(Optional, 2025-09-01+) Preview features to opt into. Currently supported value: 'GeoReplicas'."
+  nullable    = false
+
+  validation {
+    condition     = alltrue([for f in var.preview_features : contains(["GeoReplicas"], f)])
+    error_message = "preview_features entries must be 'GeoReplicas'."
+  }
+}
+
+variable "private_endpoint_connections" {
+  type = map(object({
+    private_link_service_connection_state = object({
+      status           = string
+      description      = optional(string, null)
+      actions_required = optional(string, null)
+    })
+  }))
+  default     = {}
+  description = <<DESCRIPTION
+A map of private endpoint connection approvals to manage on this cluster.
+The map key is the connection name (as assigned by Azure when the private endpoint was created).
+
+- `private_link_service_connection_state.status`           - (Required) Approval state: 'Approved', 'Pending', or 'Rejected'.
+- `private_link_service_connection_state.description`      - (Optional) Reason for approval or rejection.
+- `private_link_service_connection_state.actions_required` - (Optional) Message about required consumer-side changes.
+
+> Note: use `var.private_endpoints` to *create* private endpoints. This variable manages the approval state
+> of connections that already exist (e.g. created externally or by `var.private_endpoints`).
+DESCRIPTION
+  nullable    = false
+
+  validation {
+    condition     = alltrue([for _, v in var.private_endpoint_connections : contains(["Approved", "Pending", "Rejected"], v.private_link_service_connection_state.status)])
+    error_message = "Each private_endpoint_connections entry must have status 'Approved', 'Pending', or 'Rejected'."
+  }
 }
 
 variable "private_endpoints" {
@@ -311,6 +414,56 @@ variable "public_network_access" {
   }
 }
 
+variable "replica_parameters" {
+  type = object({
+    source_location    = string
+    source_resource_id = string
+  })
+  default     = null
+  description = "(Optional, 2025-09-01+) Source cluster parameters for geo-replica or replica creation. Required when create_mode is 'GeoReplica' or 'Replica'."
+
+  validation {
+    condition     = contains(["GeoReplica", "Replica"], var.create_mode) ? var.replica_parameters != null : var.replica_parameters == null
+    error_message = "replica_parameters must be set when create_mode is 'GeoReplica' or 'Replica', and must be null for other create_mode values."
+  }
+}
+
+variable "resource_types" {
+  type = object({
+    mongo_cluster               = optional(string, "Microsoft.DocumentDB/mongoClusters@2025-09-01")
+    firewall_rule               = optional(string, "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-09-01")
+    private_endpoint_connection = optional(string, "Microsoft.DocumentDB/mongoClusters/privateEndpointConnections@2025-09-01")
+    user                        = optional(string, "Microsoft.DocumentDB/mongoClusters/users@2025-09-01")
+  })
+  default     = {}
+  description = "Optional overrides for the MongoDB vCore cluster resource types and API versions."
+  nullable    = false
+}
+
+variable "restore_parameters" {
+  type = object({
+    point_in_time_utc  = optional(string, null)
+    source_resource_id = optional(string, null)
+  })
+  default     = null
+  description = "(Optional, 2025-09-01+) Restore parameters for point-in-time restore. Required when create_mode is 'PointInTimeRestore'."
+
+  validation {
+    condition     = var.create_mode == "PointInTimeRestore" ? var.restore_parameters != null : var.restore_parameters == null
+    error_message = "restore_parameters must be set when create_mode is 'PointInTimeRestore', and must be null for other create_mode values."
+  }
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = null
+  description = "Retry configuration applied to the root azapi_resource. Defaults to null (provider defaults)."
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
@@ -371,9 +524,62 @@ variable "storage_size_gb" {
   }
 }
 
+variable "storage_type" {
+  type        = string
+  default     = "PremiumSSD"
+  description = "(Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to 'PremiumSSD'."
+  nullable    = false
+
+  validation {
+    condition     = contains(["PremiumSSD", "PremiumSSDv2"], var.storage_type)
+    error_message = "storage_type must be 'PremiumSSD' or 'PremiumSSDv2'."
+  }
+}
+
 # tflint-ignore: terraform_unused_declarations
 variable "tags" {
   type        = map(string)
   default     = null
   description = "(Optional) Tags of the resource."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = null
+  description = "Per-operation timeouts applied to the root azapi_resource. Defaults to null (provider defaults)."
+}
+
+variable "users" {
+  type = map(object({
+    roles = list(object({
+      db   = string
+      role = string
+    }))
+    identity_provider = optional(object({
+      type = string
+      properties = optional(object({
+        principal_type = string
+      }), null)
+    }), null)
+  }))
+  default     = {}
+  description = <<DESCRIPTION
+A map of users to create on this cluster. The map key is the user name.
+
+For **NativeAuth** users the key is the login name (alphanumeric + hyphens, 1-63 chars).
+For **MicrosoftEntraID** users the key must be the Entra principal's object ID (GUID).
+
+- `roles`                                       - (Required) List of database roles. Each entry needs:
+  - `db`   - Database scope (e.g. `'admin'`).
+  - `role` - Role name. Currently only `'root'` is supported.
+- `identity_provider`                           - (Optional) Omit for native-auth users.
+  - `type`                                      - Must be `'MicrosoftEntraID'`.
+  - `properties.principal_type`                 - `'servicePrincipal'` or `'user'`.
+DESCRIPTION
+  nullable    = false
 }

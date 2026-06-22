@@ -51,6 +51,10 @@ resource "random_password" "mongo_adminpassword" {
   length           = 16
   override_special = "_%@"
   special          = true
+  min_lower        = 2
+  min_upper        = 2
+  min_numeric      = 2
+  min_special      = 2
 }
 
 resource "random_string" "resname" {
@@ -93,7 +97,7 @@ module "test" {
   # ...
   location              = azurerm_resource_group.this.location
   name                  = "cosmon-${random_string.resname.result}"
-  resource_group_name   = azurerm_resource_group.this.name
+  parent_id             = azurerm_resource_group.this.id
   backup_policy_type    = "Continuous7Days"
   compute_tier          = "M30"
   enable_telemetry      = var.enable_telemetry # see variables.tf
@@ -112,7 +116,7 @@ module "test_public" {
   administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
   name                         = "cosmon-${random_string.resname.result}fw" # ensure globally unique per subscription
-  resource_group_name          = azurerm_resource_group.this.name
+  parent_id                    = azurerm_resource_group.this.id
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M40"
   enable_telemetry             = var.enable_telemetry
@@ -143,7 +147,7 @@ module "test_private" {
   administrator_login_password = random_password.mongo_adminpassword.result
   location                     = azurerm_resource_group.this.location
   name                         = "cosmon-${random_string.resname.result}pe"
-  resource_group_name          = azurerm_resource_group.this.name
+  parent_id                    = azurerm_resource_group.this.id
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M30"
   enable_telemetry             = var.enable_telemetry
@@ -151,6 +155,7 @@ module "test_private" {
   private_endpoints = {
     pe1 = {
       subnet_resource_id = azurerm_subnet.pe.id
+      tags               = {}
     }
   }
   private_endpoints_manage_dns_zone_group = false
