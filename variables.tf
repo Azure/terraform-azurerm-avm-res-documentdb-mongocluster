@@ -101,12 +101,11 @@ variable "compute_tier" {
 
 variable "create_mode" {
   type        = string
-  default     = "Default"
-  description = "Cluster creation mode: 'Default', 'GeoReplica', 'PointInTimeRestore', or 'Replica'. Introduced in API version 2025-09-01."
-  nullable    = false
+  default     = null
+  description = "Cluster creation mode: 'Default', 'GeoReplica', 'PointInTimeRestore', or 'Replica'. Introduced in API version 2025-09-01. Defaults to null (property omitted) so existing clusters remain unaffected. This is a create-time-only property; changing it forces a replacement."
 
   validation {
-    condition     = contains(["Default", "GeoReplica", "PointInTimeRestore", "Replica"], var.create_mode)
+    condition     = var.create_mode == null ? true : contains(["Default", "GeoReplica", "PointInTimeRestore", "Replica"], var.create_mode)
     error_message = "create_mode must be one of: Default, GeoReplica, PointInTimeRestore, Replica."
   }
 }
@@ -423,7 +422,7 @@ variable "replica_parameters" {
   description = "(Optional, 2025-09-01+) Source cluster parameters for geo-replica or replica creation. Required when create_mode is 'GeoReplica' or 'Replica'."
 
   validation {
-    condition     = contains(["GeoReplica", "Replica"], var.create_mode) ? var.replica_parameters != null : var.replica_parameters == null
+    condition     = contains(["GeoReplica", "Replica"], coalesce(var.create_mode, "Default")) ? var.replica_parameters != null : var.replica_parameters == null
     error_message = "replica_parameters must be set when create_mode is 'GeoReplica' or 'Replica', and must be null for other create_mode values."
   }
 }
@@ -526,12 +525,11 @@ variable "storage_size_gb" {
 
 variable "storage_type" {
   type        = string
-  default     = "PremiumSSD"
-  description = "(Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to 'PremiumSSD'."
-  nullable    = false
+  default     = null
+  description = "(Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to null (property omitted) so existing clusters remain unaffected; new clusters that omit it inherit the service default (PremiumSSD). This is a create-time-only property; changing it forces a replacement."
 
   validation {
-    condition     = contains(["PremiumSSD", "PremiumSSDv2"], var.storage_type)
+    condition     = var.storage_type == null ? true : contains(["PremiumSSD", "PremiumSSDv2"], var.storage_type)
     error_message = "storage_type must be 'PremiumSSD' or 'PremiumSSDv2'."
   }
 }

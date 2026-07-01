@@ -3,6 +3,14 @@ locals {
   mongo_cluster_id = azapi_resource.this.id
 }
 
+# Preserve state for deployments created with module v0.1.0, where the cluster resource was
+# addressed as azapi_resource.mongo_cluster. Without this block, upgrading to v0.2.0 plans a
+# destroy + recreate of the live cluster (data loss).
+moved {
+  from = azapi_resource.mongo_cluster
+  to   = azapi_resource.this
+}
+
 # Core MongoDB vCore Cluster (minimal placeholder). Add required properties before production use.
 resource "azapi_resource" "this" {
   location  = var.location
@@ -18,14 +26,14 @@ resource "azapi_resource" "this" {
             # password is required by the API (write-only / not returned). Include and ignore drift.
             password = var.administrator_login_password
           }
-          # 2025-09-01: createMode controls cluster creation (Default, GeoReplica, PointInTimeRestore, Replica)
-          createMode = var.create_mode
           # Compute & storage objects; storage.type is new in 2025-09-01 (PremiumSSD / PremiumSSDv2)
           compute = { tier = var.compute_tier }
-          storage = {
-            sizeGb = var.storage_size_gb
-            type   = var.storage_type
-          }
+          storage = merge(
+            { sizeGb = var.storage_size_gb },
+            # storage.type is a create-time-only property. Only send it when explicitly set so an
+            # existing cluster upgraded with no new inputs is not forced to change.
+            var.storage_type != null ? { type = var.storage_type } : {}
+          )
           serverVersion    = var.server_version
           highAvailability = { targetMode = local.effective_ha_mode }
           sharding         = { shardCount = var.shard_count }
@@ -33,6 +41,11 @@ resource "azapi_resource" "this" {
           publicNetworkAccess = var.public_network_access
         },
         # Add optional properties only if they have values (API rejects null values; properties must be omitted)
+        # createMode is a create-time-only property; only send it when explicitly set so an existing
+        # cluster upgraded with no new inputs is not forced to change.
+        var.create_mode != null ? {
+          createMode = var.create_mode
+        } : {},
         length(var.auth_config_allowed_modes) > 0 ? {
           authConfig = {
             allowedModes = var.auth_config_allowed_modes
@@ -67,8 +80,23 @@ resource "azapi_resource" "this" {
   create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  # No create-only body paths have been identified yet for this resource; keep the AVM
-  # interface explicit so immutable paths can be added here if the API proves any are required.
+  # Create-time-only properties on Cosmos DB for MongoDB vCore. Azure cannot enable or alter these
+  # on an existing cluster, so a change must force a replacement (an explicit destroy/create the
+  # operator can see) instead of a doomed in-place update that the API rejects and azapi retries
+  # until the Terraform timeout ("context deadline exceeded").
+  # Values are wrapped in objects so a null -> value transition (e.g. enabling CMK on an existing
+  # cluster) still triggers replacement (the plan modifier skips bare null values).
+  # managed_identities is tracked as the full object (not just the derived type string) so that
+  # swapping user_assigned_resource_ids while remaining "UserAssigned" also forces replacement,
+  # matching the documented create-time-only behaviour (the CMK key identity cannot change in place).
+  replace_triggers_external_values = [
+    { encryption = local.cmk_encryption },
+    { managed_identities = var.managed_identities },
+    { storage_type = var.storage_type },
+    { create_mode = var.create_mode },
+  ]
+  # Required by the AVM AzAPI interface; declared (empty) because replacement is driven entirely by
+  # replace_triggers_external_values above rather than references to other resource attributes.
   replace_triggers_refs = []
   # Allow-list of response fields exported into `output`. Server-computed/volatile fields
   # are intentionally excluded to keep `terraform plan` idempotent:
