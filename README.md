@@ -4,6 +4,24 @@
 
 This module manages a MongoDB Cluster using vCore Architecture.
 
+## Upgrading from v0.1.0 to v0.2.0
+
+v0.2.0 renamed the internal cluster resource from `azapi_resource.mongo_cluster` to
+`azapi_resource.this` and moved the API version to `2025-09-01`. The module now ships a
+`moved` block, so upgrading no longer plans a destroy/recreate of an existing cluster — run
+`terraform plan` and confirm the state is migrated in place. If you previously worked around
+this with `terraform state mv`, the `moved` block is a harmless no-op.
+
+The create-time-only properties `create_mode`, `storage_type`, and customer-managed-key
+`encryption` (with its managed identity) now default to being **omitted** unless you set them,
+so a plain upgrade with no new inputs produces a clean, no-op plan.
+
+> **Note:** `create_mode`, `storage_type`, `customer_managed_key`, and `managed_identities` are
+> create-time-only on Cosmos DB for MongoDB vCore. Changing any of them on an existing cluster
+> forces a **replacement** (destroy + create) — Terraform will show `# forces replacement`.
+> To enable CMK encryption on an already-provisioned cluster you must create a new, CMK-enabled
+> cluster and migrate/restore into it; it cannot be enabled in place.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -100,11 +118,11 @@ Default: `"M30"`
 
 ### <a name="input_create_mode"></a> [create\_mode](#input\_create\_mode)
 
-Description: Cluster creation mode: 'Default', 'GeoReplica', 'PointInTimeRestore', or 'Replica'. Introduced in API version 2025-09-01.
+Description: Cluster creation mode: 'Default', 'GeoReplica', 'PointInTimeRestore', or 'Replica'. Introduced in API version 2025-09-01. Defaults to null (property omitted) so existing clusters remain unaffected. This is a create-time-only property; changing it forces a replacement.
 
 Type: `string`
 
-Default: `"Default"`
+Default: `null`
 
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
@@ -490,11 +508,11 @@ Default: `32`
 
 ### <a name="input_storage_type"></a> [storage\_type](#input\_storage\_type)
 
-Description: (Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to 'PremiumSSD'.
+Description: (Optional, 2025-09-01+) Storage type to provision: 'PremiumSSD' or 'PremiumSSDv2'. Defaults to null (property omitted) so existing clusters remain unaffected; new clusters that omit it inherit the service default (PremiumSSD). This is a create-time-only property; changing it forces a replacement.
 
 Type: `string`
 
-Default: `"PremiumSSD"`
+Default: `null`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 

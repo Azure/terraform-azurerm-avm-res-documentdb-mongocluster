@@ -95,7 +95,16 @@ resource "random_string" "resname" {
   upper   = false
 }
 
-# MongoDB cluster with customer-managed key encryption
+# MongoDB cluster with customer-managed key encryption.
+#
+# IMPORTANT: On Cosmos DB for MongoDB vCore, customer-managed key `encryption`, the
+# `managed_identities` that back it, `storage_type`, and `create_mode` are all
+# CREATE-TIME-ONLY properties. They must be set when the cluster is first created and
+# cannot be enabled or changed on an existing cluster. The module reflects this via
+# `replace_triggers_external_values`, so changing any of them on an existing cluster
+# produces an explicit `# forces replacement` plan (destroy + create) rather than a
+# doomed in-place update. To adopt CMK on an already-provisioned cluster, create a new
+# CMK-enabled cluster (as below) and migrate/restore into it.
 module "test_cmk" {
   source = "../../"
 
@@ -106,9 +115,11 @@ module "test_cmk" {
   parent_id                    = azurerm_resource_group.this.id
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M30"
-  enable_telemetry             = var.enable_telemetry
+  # create_mode is a create-time-only property; set it explicitly for a new cluster.
+  create_mode      = "Default"
+  enable_telemetry = var.enable_telemetry
 
-  # Customer-managed key encryption configuration
+  # Customer-managed key encryption configuration (create-time only)
   customer_managed_key = {
     key_vault_resource_id = azurerm_key_vault.mongo_cmk.id
     key_name              = azurerm_key_vault_key.mongo_cmk.name
@@ -118,7 +129,7 @@ module "test_cmk" {
     }
   }
 
-  # Assign the user-assigned identity to the cluster
+  # Assign the user-assigned identity to the cluster (create-time only)
   managed_identities = {
     system_assigned            = false
     user_assigned_resource_ids = [azurerm_user_assigned_identity.mongo_cmk.id]
@@ -128,7 +139,8 @@ module "test_cmk" {
   public_network_access = "Disabled"
   server_version        = "7.0"
   storage_size_gb       = 128
-  storage_type          = "PremiumSSD"
+  # storage_type is a create-time-only property; must be set at creation.
+  storage_type = "PremiumSSD"
 
   depends_on = [azurerm_role_assignment.mongo_cmk_decrypt]
 }
