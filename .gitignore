@@ -52,4 +52,4 @@ avm.tflint_module.merged.hcl
 examples/*/policy
 .github/chatmodes/*
 *.mptfbackup
-.avm
+.avm/managed-files.json
