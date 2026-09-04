@@ -1,21 +1,12 @@
-variable "parent_id" {
+variable "end_ip" {
   type        = string
-  description = "Resource ID of the parent MongoDB vCore cluster."
+  description = "End IPv4 address of the firewall rule range."
   nullable    = false
 
   validation {
-    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
-    error_message = "parent_id must be a valid Azure MongoDB vCore cluster resource ID."
+    condition     = can(regex("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", var.end_ip))
+    error_message = "end_ip must be a valid IPv4 address."
   }
-}
-
-variable "resource_types" {
-  type = object({
-    this = optional(string, "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-09-01")
-  })
-  default     = {}
-  description = "Optional override for the firewall rule resource type and API version."
-  nullable    = false
 }
 
 variable "name" {
@@ -26,6 +17,17 @@ variable "name" {
   validation {
     condition     = can(regex("^[a-zA-Z0-9][-_.a-zA-Z0-9]*$", var.name)) && length(var.name) >= 1 && length(var.name) <= 80
     error_message = "name must be 1-80 characters, start with alphanumeric, and contain only alphanumeric, -, _, . characters."
+  }
+}
+
+variable "parent_id" {
+  type        = string
+  description = "Resource ID of the parent MongoDB vCore cluster."
+  nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
+    error_message = "parent_id must be a valid Azure MongoDB vCore cluster resource ID."
   }
 }
 
@@ -40,15 +42,10 @@ variable "start_ip" {
   }
 }
 
-variable "end_ip" {
+variable "avm_azapi_header" {
   type        = string
-  description = "End IPv4 address of the firewall rule range."
-  nullable    = false
-
-  validation {
-    condition     = can(regex("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", var.end_ip))
-    error_message = "end_ip must be a valid IPv4 address."
-  }
+  default     = null
+  description = "Pre-computed AVM User-Agent header string from the root module. Pass null when telemetry is disabled."
 }
 
 variable "enable_telemetry" {
@@ -58,10 +55,13 @@ variable "enable_telemetry" {
   nullable    = false
 }
 
-variable "avm_azapi_header" {
-  type        = string
-  default     = null
-  description = "Pre-computed AVM User-Agent header string from the root module. Pass null when telemetry is disabled."
+variable "resource_types" {
+  type = object({
+    this = optional(string, "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-09-01")
+  })
+  default     = {}
+  description = "Optional override for the firewall rule resource type and API version."
+  nullable    = false
 }
 
 variable "retry" {
