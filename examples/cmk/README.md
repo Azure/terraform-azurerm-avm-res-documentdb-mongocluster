@@ -64,47 +64,47 @@ resource "azurerm_key_vault" "mongo_cmk" {
   location                   = azurerm_resource_group.this.location
   name                       = module.naming.key_vault.name_unique
   resource_group_name        = azurerm_resource_group.this.name
-  rbac_authorization_enabled = true
-  purge_protection_enabled   = true
-  soft_delete_retention_days = 7
   sku_name                   = "standard"
   tenant_id                  = data.azurerm_client_config.current.tenant_id
+  purge_protection_enabled   = true
+  rbac_authorization_enabled = true
+  soft_delete_retention_days = 7
 }
 
 # Grant the user-assigned identity access to the Key Vault
 # Using Key Vault Crypto Service Encryption User role for decryption during reads
 resource "azurerm_role_assignment" "mongo_cmk_decrypt" {
+  principal_id         = azurerm_user_assigned_identity.mongo_cmk.principal_id
   scope                = azurerm_key_vault.mongo_cmk.id
   role_definition_name = "Key Vault Crypto Service Encryption User"
-  principal_id         = azurerm_user_assigned_identity.mongo_cmk.principal_id
 }
 
 # Grant current user access to create/manage keys (for local testing/setup)
 resource "azurerm_role_assignment" "current_user_crypto_officer" {
+  principal_id         = data.azurerm_client_config.current.object_id
   scope                = azurerm_key_vault.mongo_cmk.id
   role_definition_name = "Key Vault Crypto Officer"
-  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 # Create an encryption key in the vault
 resource "azurerm_key_vault_key" "mongo_cmk" {
-  key_vault_id = azurerm_key_vault.mongo_cmk.id
   key_opts     = ["decrypt", "encrypt", "sign", "unwrapKey", "verify", "wrapKey"]
-  key_size     = 2048
   key_type     = "RSA"
+  key_vault_id = azurerm_key_vault.mongo_cmk.id
   name         = "mongo-encryption-key"
+  key_size     = 2048
 
   depends_on = [azurerm_role_assignment.current_user_crypto_officer]
 }
 
 resource "random_password" "mongo_adminpassword" {
   length           = 16
-  override_special = "_%@"
-  special          = true
   min_lower        = 2
-  min_upper        = 2
   min_numeric      = 2
   min_special      = 2
+  min_upper        = 2
+  override_special = "_%@"
+  special          = true
 }
 
 resource "random_string" "resname" {
@@ -135,9 +135,7 @@ module "test_cmk" {
   backup_policy_type           = "Continuous7Days"
   compute_tier                 = "M30"
   # create_mode is a create-time-only property; set it explicitly for a new cluster.
-  create_mode      = "Default"
-  enable_telemetry = var.enable_telemetry
-
+  create_mode = "Default"
   # Customer-managed key encryption configuration (create-time only)
   customer_managed_key = {
     key_vault_resource_id = azurerm_key_vault.mongo_cmk.id
@@ -147,14 +145,13 @@ module "test_cmk" {
       resource_id = azurerm_user_assigned_identity.mongo_cmk.id
     }
   }
-
+  enable_telemetry = var.enable_telemetry
+  ha_mode          = "Disabled"
   # Assign the user-assigned identity to the cluster (create-time only)
   managed_identities = {
     system_assigned            = false
     user_assigned_resource_ids = [azurerm_user_assigned_identity.mongo_cmk.id]
   }
-
-  ha_mode               = "Disabled"
   public_network_access = "Disabled"
   server_version        = "7.0"
   storage_size_gb       = 128

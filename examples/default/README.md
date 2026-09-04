@@ -33,6 +33,7 @@ resource "random_integer" "region_index" {
   max = length(local.test_regions) - 1
   min = 0
 }
+
 ## End of section to provide a random Azure region for the resource group
 
 # This ensures we have unique CAF compliant names for our resources.
@@ -49,12 +50,12 @@ resource "azurerm_resource_group" "this" {
 
 resource "random_password" "mongo_adminpassword" {
   length           = 16
-  override_special = "_%@"
-  special          = true
   min_lower        = 2
-  min_upper        = 2
   min_numeric      = 2
   min_special      = 2
+  min_upper        = 2
+  override_special = "_%@"
+  special          = true
 }
 
 resource "random_string" "resname" {
@@ -73,10 +74,10 @@ resource "azurerm_virtual_network" "pe" {
 }
 
 resource "azurerm_subnet" "pe" {
-  address_prefixes     = ["10.10.0.0/24"]
   name                 = "pe-subnet"
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.pe.name
+  address_prefixes     = ["10.10.0.0/24"]
 }
 
 module "public_ip" {

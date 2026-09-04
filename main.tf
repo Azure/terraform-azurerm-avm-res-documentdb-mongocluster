@@ -77,9 +77,6 @@ resource "azapi_resource" "this" {
       )
     }
   )
-  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   # Create-time-only properties on Cosmos DB for MongoDB vCore. Azure cannot enable or alter these
   # on an existing cluster, so a change must force a replacement (an explicit destroy/create the
   # operator can see) instead of a doomed in-place update that the API rejects and azapi retries
@@ -126,7 +123,6 @@ resource "azapi_resource" "this" {
   # Schema validation enabled to catch drift with published swagger.
   schema_validation_enabled = true
   tags                      = var.tags
-  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
@@ -156,7 +152,6 @@ module "firewall_rule" {
   name             = each.key
   parent_id        = azapi_resource.this.id
   start_ip         = each.value.start_ip
-  avm_azapi_header = local.avm_azapi_header
   enable_telemetry = var.enable_telemetry
   resource_types = {
     this = var.resource_types.firewall_rule
@@ -173,7 +168,6 @@ module "private_endpoint_connection" {
   name                                  = each.key
   parent_id                             = azapi_resource.this.id
   private_link_service_connection_state = each.value.private_link_service_connection_state
-  avm_azapi_header                      = local.avm_azapi_header
   enable_telemetry                      = var.enable_telemetry
   resource_types = {
     this = var.resource_types.private_endpoint_connection
@@ -190,7 +184,6 @@ module "user" {
   name              = each.key
   parent_id         = azapi_resource.this.id
   roles             = each.value.roles
-  avm_azapi_header  = local.avm_azapi_header
   enable_telemetry  = var.enable_telemetry
   identity_provider = each.value.identity_provider
   resource_types = {

@@ -6,7 +6,6 @@ resource "azapi_resource" "this" {
   name      = var.name
   parent_id = var.parent_id
   type      = var.resource_types.this
-
   body = {
     properties = {
       # privateEndpoint is a read-only object in the response; an empty object satisfies the schema.
@@ -18,7 +17,6 @@ resource "azapi_resource" "this" {
       }
     }
   }
-
   create_headers        = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
   delete_headers        = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
   read_headers          = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null

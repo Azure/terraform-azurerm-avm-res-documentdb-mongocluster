@@ -1,23 +1,3 @@
-variable "parent_id" {
-  type        = string
-  description = "Resource ID of the parent MongoDB vCore cluster."
-  nullable    = false
-
-  validation {
-    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
-    error_message = "parent_id must be a valid Azure MongoDB vCore cluster resource ID."
-  }
-}
-
-variable "resource_types" {
-  type = object({
-    this = optional(string, "Microsoft.DocumentDB/mongoClusters/users@2025-09-01")
-  })
-  default     = {}
-  description = "Optional override for the user resource type and API version."
-  nullable    = false
-}
-
 variable "name" {
   type        = string
   description = <<DESCRIPTION
@@ -29,6 +9,17 @@ DESCRIPTION
   validation {
     condition     = can(regex("^[a-zA-Z0-9\\-]{1,63}$", var.name))
     error_message = "name must be 1-63 characters and contain only alphanumeric characters and hyphens."
+  }
+}
+
+variable "parent_id" {
+  type        = string
+  description = "Resource ID of the parent MongoDB vCore cluster."
+  nullable    = false
+
+  validation {
+    condition     = can(provider::azapi::parse_resource_id("Microsoft.DocumentDB/mongoClusters", var.parent_id))
+    error_message = "parent_id must be a valid Azure MongoDB vCore cluster resource ID."
   }
 }
 
@@ -53,6 +44,19 @@ DESCRIPTION
     condition     = alltrue([for r in var.roles : r.role == "root"])
     error_message = "Only the 'root' role is currently supported by the API."
   }
+}
+
+variable "avm_azapi_header" {
+  type        = string
+  default     = null
+  description = "Pre-computed AVM User-Agent header string from the root module. Pass null when telemetry is disabled."
+}
+
+variable "enable_telemetry" {
+  type        = bool
+  default     = true
+  description = "Whether to emit AVM telemetry headers. Passed from the root module."
+  nullable    = false
 }
 
 variable "identity_provider" {
@@ -85,17 +89,13 @@ DESCRIPTION
   }
 }
 
-variable "enable_telemetry" {
-  type        = bool
-  default     = true
-  description = "Whether to emit AVM telemetry headers. Passed from the root module."
+variable "resource_types" {
+  type = object({
+    this = optional(string, "Microsoft.DocumentDB/mongoClusters/users@2025-09-01")
+  })
+  default     = {}
+  description = "Optional override for the user resource type and API version."
   nullable    = false
-}
-
-variable "avm_azapi_header" {
-  type        = string
-  default     = null
-  description = "Pre-computed AVM User-Agent header string from the root module. Pass null when telemetry is disabled."
 }
 
 variable "retry" {
