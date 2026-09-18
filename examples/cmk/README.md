@@ -203,7 +203,7 @@ Description: Enable telemetry for the module (pass through to the module).
 
 Type: `bool`
 
-Default: `true`
+Default: `false`
 
 ## Outputs
 
