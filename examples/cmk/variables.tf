@@ -1,5 +1,5 @@
 variable "enable_telemetry" {
   type        = bool
-  default     = false
+  default     = true
   description = "Enable telemetry for the module (pass through to the module)."
 }
