@@ -26,13 +26,19 @@ so a plain upgrade with no new inputs produces a clean, no-op plan.
 
 Private endpoint `lock` and `role_assignments` values are now applied; earlier versions
 accepted these inputs without creating their resources. Review the additional locks and
-permissions in your upgrade plan. Omitted, empty, and null inputs retain their defaults.
+permissions in your upgrade plan. An omitted/null lock or omitted/null/empty role
+assignment map still creates no such resources.
 
 Existing endpoint names, network interface naming, DNS management, and per-endpoint tags
 are unchanged. `resource_group_name` continues to accept a resource group **name**, not
 an ARM resource ID. An omitted or null `subresource_name` retains `MongoCluster` for the
 connection and leaves the static IP configuration's group unset. An omitted or null
 `member_name` leaves member selection to the platform.
+
+Earlier versions discarded extra `subresource_name` and `member_name` attributes.
+They now take effect. Values that differ from deployed state can cause AzureRM to
+replace the endpoint. Review the upgrade plan if you supplied these previously
+unsupported attributes.
 
 Endpoint role assignments use AzAPI. `skip_service_principal_aad_check` is accepted for
 interface compatibility only: AzAPI does not perform the AzureRM provider's directory
