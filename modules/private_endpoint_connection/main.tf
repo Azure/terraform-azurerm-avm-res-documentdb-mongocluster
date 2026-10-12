@@ -17,10 +17,9 @@ resource "azapi_resource" "this" {
       }
     }
   }
-  create_headers        = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
-  delete_headers        = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
-  read_headers          = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
-  replace_triggers_refs = []
+  create_headers = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : var.avm_azapi_header } : null
   response_export_values = [
     "properties.privateLinkServiceConnectionState.status",
   ]
