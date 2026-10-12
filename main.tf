@@ -92,9 +92,6 @@ resource "azapi_resource" "this" {
     { storage_type = var.storage_type },
     { create_mode = var.create_mode },
   ]
-  # Required by the AVM AzAPI interface; declared (empty) because replacement is driven entirely by
-  # replace_triggers_external_values above rather than references to other resource attributes.
-  replace_triggers_refs = []
   # Allow-list of response fields exported into `output`. Server-computed/volatile fields
   # are intentionally excluded to keep `terraform plan` idempotent:
   #   - properties.backup.earliestRestoreTime  (timestamp updated on every refresh)

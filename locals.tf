@@ -18,6 +18,21 @@ locals {
       }
     ]
   ]) : "${assoc.pe_key}-${assoc.asg_key}" => assoc }
+  private_endpoint_resource_ids = {
+    for key, value in var.private_endpoints : key => (
+      var.private_endpoints_manage_dns_zone_group
+      ? azurerm_private_endpoint.this_managed_dns_zone_groups[key].id
+      : azurerm_private_endpoint.this_unmanaged_dns_zone_groups[key].id
+    )
+  }
+  private_endpoint_role_assignments = merge({}, [
+    for endpoint_key, endpoint in var.private_endpoints : {
+      for role_key, role_assignment in endpoint.role_assignments : jsonencode([endpoint_key, role_key]) => {
+        private_endpoint_key = endpoint_key
+        role_assignment      = role_assignment
+      }
+    }
+  ]...)
   parent_resource_group_name         = provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", var.parent_id).resource_group_name
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
 
