@@ -146,6 +146,7 @@ module "firewall_rule" {
   for_each = var.public_network_access == "Enabled" ? { for r in var.firewall_rules : r.name => r } : {}
 
   end_ip           = each.value.end_ip
+  location         = var.location
   name             = each.key
   parent_id        = azapi_resource.this.id
   start_ip         = each.value.start_ip
@@ -162,6 +163,7 @@ module "private_endpoint_connection" {
   source   = "./modules/private_endpoint_connection"
   for_each = var.private_endpoint_connections
 
+  location                              = var.location
   name                                  = each.key
   parent_id                             = azapi_resource.this.id
   private_link_service_connection_state = each.value.private_link_service_connection_state
@@ -178,6 +180,7 @@ module "user" {
   source   = "./modules/user"
   for_each = var.users
 
+  location          = var.location
   name              = each.key
   parent_id         = azapi_resource.this.id
   roles             = each.value.roles
