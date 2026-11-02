@@ -1,9 +1,3 @@
-variable "location" {
-  type        = string
-  description = "The Azure region for this module's resources or telemetry deployment."
-  nullable    = false
-}
-
 variable "name" {
   type        = string
   description = <<DESCRIPTION
@@ -96,6 +90,17 @@ DESCRIPTION
       contains(["servicePrincipal", "user"], var.identity_provider.properties.principal_type)
     )
     error_message = "identity_provider.properties.principal_type must be set to 'servicePrincipal' or 'user' when identity_provider is specified."
+  }
+}
+
+variable "location" {
+  type        = string
+  default     = null
+  description = "The Azure region for this module's resources or telemetry deployment."
+
+  validation {
+    condition     = !var.enable_telemetry || var.location != null
+    error_message = "The location must not be null when telemetry is enabled."
   }
 }
 
